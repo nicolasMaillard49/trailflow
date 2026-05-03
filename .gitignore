@@ -8,11 +8,18 @@ node_modules/
 out/
 build/
 dist/
+.turbo/
+.next-types/
+
+# Prisma
+backend/generated/
 
 # Env
 .env
 .env.local
 .env.*.local
+backend/.env
+frontend-next/.env
 
 # Logs
 *.log

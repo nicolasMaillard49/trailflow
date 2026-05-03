@@ -1,0 +1,14 @@
+{
+  "name": "trailflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TrailFlow — gilet hydratation trail & running. Monorepo Next.js (front) + NestJS (back).",
+  "workspaces": ["frontend-next", "backend"],
+  "scripts": {
+    "dev:front": "npm run dev --workspace=frontend-next",
+    "dev:back": "npm run start:dev --workspace=trailflow-backend",
+    "build:front": "npm run build --workspace=frontend-next",
+    "build:back": "npm run build --workspace=trailflow-backend",
+    "lint": "npm run lint --workspace=trailflow-backend"
+  }
+}

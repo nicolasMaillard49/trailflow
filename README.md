@@ -5,10 +5,25 @@
 
 ## Stack
 
-- **Front** : Next.js 14 (App Router) · React · Tailwind · Shadcn/ui · Framer Motion · Zustand
-- **Back** : Nuxt existant en **API only** (headless) — commandes / stock / produits / emails
-- **Paiement** : Stripe
-- **Hébergement** : Vercel (front) + serveur actuel (back Nuxt)
+**Monorepo** (npm workspaces) :
+
+- **`frontend-next/`** — Next.js 16 (App Router) · React 19 · Tailwind v4 · Framer Motion · Zustand
+- **`backend/`** — NestJS · Prisma · PostgreSQL · Stripe (Embedded Checkout) · Resend
+- **Hébergement** : Vercel (front) + Railway (back + Postgres)
+
+## Commandes
+
+```bash
+# install (à la racine — installe tout via workspaces)
+npm install
+
+# front (port 3000)
+npm run dev:front
+
+# back (port 3001)
+cp backend/.env.example backend/.env
+npm run dev:back
+```
 
 ## Routes
 

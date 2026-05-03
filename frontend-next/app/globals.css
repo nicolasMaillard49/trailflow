@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+:root {
+  /* TrailFlow design system v3 — palette */
+  --ink:        #0E0E0C;
+  --ink-soft:   #1C1C1A;
+  --cream:      #F0EDE8;
+  --cream-dk:   #D8D4CE;
+  --muted:      #7A7872;
+  --muted-lt:   #ABA9A4;
+  --silver:     #C4C2BE;
+  --white:      #FFFFFF;
+  --green:      #2A7A5A;
+
+  /* Borders */
+  --border-subtle:  rgba(240, 237, 232, 0.06);
+  --border-hover:   rgba(240, 237, 232, 0.15);
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@theme inline {
+  --color-ink:        var(--ink);
+  --color-ink-soft:   var(--ink-soft);
+  --color-cream:      var(--cream);
+  --color-cream-dk:   var(--cream-dk);
+  --color-muted:      var(--muted);
+  --color-muted-lt:   var(--muted-lt);
+  --color-silver:     var(--silver);
+  --color-green:      var(--green);
+
+  --font-display: var(--font-cormorant);
+  --font-sans:    var(--font-geist);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-geist), sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Marquee strip animation */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Hero reveal */
+@keyframes hero-reveal {
+  from { transform: scale(1.08); opacity: 0.6; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.animate-hero-reveal {
+  animation: hero-reveal 1.6s var(--ease-spring) forwards;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.8s var(--ease-spring) both;
+}
