@@ -36,3 +36,8 @@ Voir [docs/design.md](docs/design.md) pour la palette complète et la typo.
 
 Toute la spec produit, ads, assets et todo est dans le vault Obsidian :
 **`D:\obsidian\MonCerveau\Projets\trailflow.md`**
+
+## Référence visuelle
+
+- **Design system** : [docs/design.md](docs/design.md) — palette, typo, composants, tokens CSS
+- **Prototype landing** : [landing-prototype/trailflow_v3.html](landing-prototype/trailflow_v3.html) — référence HTML à convertir en composants Next.js
