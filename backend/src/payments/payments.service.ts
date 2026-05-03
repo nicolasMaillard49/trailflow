@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { BundlesService } from '../bundles/bundles.service';
+import { TrackingService } from '../tracking/tracking.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private bundlesService: BundlesService,
+    private trackingService: TrackingService,
   ) {
     this.stripe = new Stripe(this.configService.getOrThrow('STRIPE_SECRET_KEY'));
   }
@@ -136,7 +138,8 @@ export class PaymentsService {
         include: { items: { include: { product: true } } },
       });
 
-      // Send order confirmation email (non-blocking)
+      // Send order confirmation email (non-blocking) avec magic link de suivi
+      const magicLink = this.trackingService.generateMagicLink(order.id);
       this.emailService.sendOrderConfirmation({
         orderNumber: order.orderNumber,
         customerName: order.customerName,
@@ -148,6 +151,7 @@ export class PaymentsService {
           price: item.price,
         })),
         shippingAddress: order.shippingAddress as any,
+        trackingMagicLink: magicLink,
       });
     }
 
@@ -173,6 +177,47 @@ export class PaymentsService {
       where: { stripeSessionId: sessionId },
       include: { items: { include: { product: true } } },
     });
-    return { session, order };
+    // Whitelist : on n'expose au front QUE ce qui est utile à la confirmation.
+    return {
+      session: {
+        id: session.id,
+        status: session.status,
+        payment_status: session.payment_status,
+        amount_total: session.amount_total,
+        customer_details: session.customer_details
+          ? { email: session.customer_details.email }
+          : null,
+      },
+      order: order
+        ? {
+            id: order.id,
+            orderRef: orderRefFromId(order.id),
+            orderNumber: order.orderNumber,
+            customerName: order.customerName,
+            customerEmail: order.customerEmail,
+            total: order.total,
+            status: order.status,
+            createdAt: order.createdAt,
+            // Magic link signé pour suivre la commande sans login
+            trackingMagicLink: this.trackingService.generateMagicLink(order.id),
+            items: order.items.map((i) => ({
+              name: i.product?.name || 'Article',
+              quantity: i.quantity,
+              price: i.price,
+              variant: i.variant,
+            })),
+          }
+        : null,
+    };
   }
 }
+
+/**
+ * Référence commande aléatoire dérivée de l'UUID Prisma : `TF-XXXX-XXXX`.
+ * Stable (même résultat pour le même order), aléatoire-looking.
+ */
+function orderRefFromId(id: string): string {
+  const clean = id.replace(/-/g, '').toUpperCase();
+  return `TF-${clean.slice(0, 4)}-${clean.slice(4, 8)}`;
+}
+

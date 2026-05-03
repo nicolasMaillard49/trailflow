@@ -28,7 +28,8 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
+    // Bearer token dans Authorization header → pas besoin de cookies cross-origin
+    credentials: false,
   });
 
   app.useGlobalPipes(new ValidationPipe({
@@ -36,6 +37,12 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
     transform: true,
   }));
+
+  // Sanity check JWT secret pour éviter de partir en prod avec un placeholder
+  const jwt = process.env.JWT_SECRET || '';
+  if (process.env.NODE_ENV === 'production' && jwt.length < 32) {
+    throw new Error('JWT_SECRET trop court (min 32 caractères) en production');
+  }
 
   app.setGlobalPrefix('api');
   await app.listen(process.env.PORT || 3000);

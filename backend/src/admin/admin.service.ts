@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { TrackingService } from '../tracking/tracking.service';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateOrderTrackingDto } from './dto/update-order-tracking.dto';
 import { UpdateOrderSupplierDto } from './dto/update-order-supplier.dto';
@@ -10,6 +11,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private trackingService: TrackingService,
   ) {}
 
   async getDashboard() {
@@ -54,7 +56,10 @@ export class AdminService {
       totalOrders,
       paidOrders,
       totalRevenue: totalRevenue._sum.total || 0,
-      recentOrders,
+      recentOrders: recentOrders.map((o) => ({
+        ...o,
+        orderRef: orderRefFromId(o.id),
+      })),
       monthly: {
         revenue: monthlyRevenue,
         orderCount: monthlyOrderCount,
@@ -73,23 +78,38 @@ export class AdminService {
       include: { items: { include: { product: true } } },
     });
     const total = await this.prisma.order.count();
-    return { orders, total, page, totalPages: Math.ceil(total / limit) };
+    const ordersWithRef = orders.map((o) => ({
+      ...o,
+      orderRef: orderRefFromId(o.id),
+    }));
+    return { orders: ordersWithRef, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async updateOrderStatus(id: string, status: string) {
+    // Lit l'ancien statut AVANT update pour détecter une vraie transition vers SHIPPED
+    const before = await this.prisma.order.findUnique({
+      where: { id },
+      select: { status: true },
+    });
     const order = await this.prisma.order.update({
       where: { id },
       data: { status: status as any },
     });
 
-    // Send shipping notification when status changes to SHIPPED
-    if (status === 'SHIPPED' && order.customerEmail) {
+    // N'envoie l'email que si on PASSE à SHIPPED (pas si déjà SHIPPED)
+    if (
+      status === 'SHIPPED' &&
+      before?.status !== 'SHIPPED' &&
+      order.customerEmail
+    ) {
+      const magicLink = this.trackingService.generateMagicLink(order.id);
       this.emailService.sendShippingNotification({
         orderNumber: order.orderNumber,
         customerName: order.customerName,
         customerEmail: order.customerEmail,
         trackingNumber: order.trackingNumber || undefined,
         trackingUrl: order.trackingUrl || undefined,
+        trackingMagicLink: magicLink,
       });
     }
 
@@ -97,6 +117,12 @@ export class AdminService {
   }
 
   async updateOrderTracking(id: string, data: UpdateOrderTrackingDto) {
+    // Idem : on lit avant pour ne pas double-envoyer si tracking re-soumis ou
+    // si le status est déjà SHIPPED (l'email a déjà été déclenché par updateOrderStatus)
+    const before = await this.prisma.order.findUnique({
+      where: { id },
+      select: { trackingNumber: true, status: true },
+    });
     const order = await this.prisma.order.update({
       where: { id },
       data: {
@@ -105,14 +131,17 @@ export class AdminService {
       },
     });
 
-    // Send shipping notification email (non-blocking)
-    if (data.trackingNumber && order.customerEmail) {
+    const isFirstTracking = !before?.trackingNumber && !!data.trackingNumber;
+    const notAlreadyShipped = before?.status !== 'SHIPPED';
+    if (isFirstTracking && notAlreadyShipped && order.customerEmail) {
+      const magicLink = this.trackingService.generateMagicLink(order.id);
       this.emailService.sendShippingNotification({
         orderNumber: order.orderNumber,
         customerName: order.customerName,
         customerEmail: order.customerEmail,
         trackingNumber: data.trackingNumber,
         trackingUrl: data.trackingUrl,
+        trackingMagicLink: magicLink,
       });
     }
 
@@ -151,4 +180,10 @@ export class AdminService {
     }
     return this.prisma.product.findFirst({ where: { active: true } });
   }
+}
+
+/** Référence commande aléatoire dérivée de l'UUID Prisma : `TF-XXXX-XXXX`. */
+function orderRefFromId(id: string): string {
+  const clean = id.replace(/-/g, '').toUpperCase();
+  return `TF-${clean.slice(0, 4)}-${clean.slice(4, 8)}`;
 }

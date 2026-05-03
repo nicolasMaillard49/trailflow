@@ -3,15 +3,14 @@ import { IsOptional, IsString, MaxLength, IsEmail } from 'class-validator';
 export class LookupTrackingDto {
   @IsOptional()
   @IsString()
-  @MaxLength(100)
-  orderNumber?: string;
+  @MaxLength(40)
+  orderRef?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(200)
-  name?: string;
+  @MaxLength(20)
+  orderNumber?: string;
 
-  @IsOptional()
   @IsEmail()
-  email?: string;
+  email!: string;
 }

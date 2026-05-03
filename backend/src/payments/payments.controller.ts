@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Headers, Req, Get, Query } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { SessionIdDto } from './dto/session-id.dto';
 import type { Request } from 'express';
 
 @Controller('payments')
@@ -23,12 +24,12 @@ export class PaymentsController {
   }
 
   @Post('cancel-order')
-  cancelOrder(@Body('session_id') sessionId: string) {
-    return this.paymentsService.cancelOrder(sessionId);
+  cancelOrder(@Body() dto: SessionIdDto) {
+    return this.paymentsService.cancelOrder(dto.session_id);
   }
 
   @Get('session-status')
-  getSessionStatus(@Query('session_id') sessionId: string) {
-    return this.paymentsService.getSessionStatus(sessionId);
+  getSessionStatus(@Query() dto: SessionIdDto) {
+    return this.paymentsService.getSessionStatus(dto.session_id);
   }
 }
