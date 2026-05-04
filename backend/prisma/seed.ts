@@ -88,8 +88,10 @@ async function main() {
     comparePrice: number | null;
     badge: string | null;
     position: number;
+    active?: boolean;
     items: { productId: string; quantity: number }[];
   }) {
+    const active = data.active ?? true;
     const bundle = await prisma.bundle.upsert({
       where: { slug: data.slug },
       update: {
@@ -99,6 +101,7 @@ async function main() {
         comparePrice: data.comparePrice,
         badge: data.badge,
         position: data.position,
+        active,
       },
       create: {
         slug: data.slug,
@@ -108,7 +111,7 @@ async function main() {
         comparePrice: data.comparePrice,
         badge: data.badge,
         position: data.position,
-        active: true,
+        active,
       },
     });
 
@@ -125,7 +128,10 @@ async function main() {
     return bundle;
   }
 
-  // Upsell pack hydratation : gilet + flasques
+  // Pack hydratation : conservé en BDD pour l'historique mais désactivé.
+  // Les flasques sont désormais vendues en add-on cochable sur /produit
+  // (gilet 34.90 + flasques 15 = 49.90). Garder ce bundle actif créerait
+  // un trou tarifaire (achat API direct à 39.90€).
   await upsertBundle({
     slug: 'pack-hydratation',
     label: 'Pack Hydratation',
@@ -134,6 +140,7 @@ async function main() {
     comparePrice: 57.8,
     badge: '-31%',
     position: 1,
+    active: false,
     items: [
       { productId: product.id, quantity: 1 },
       { productId: flasques.id, quantity: 1 },
