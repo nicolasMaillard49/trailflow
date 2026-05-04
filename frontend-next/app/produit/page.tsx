@@ -100,6 +100,7 @@ type Tab = "desc" | "specs" | "reviews" | "sizes";
 export default function ProduitPage() {
   const [active, setActive] = useState(0);
   const [size, setSize] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState(false);
   const [color, setColor] = useState(COLOR_VARIANTS[0].name);
   const [qty, setQty] = useState(1);
   const [wishlist, setWishlist] = useState(false);
@@ -216,11 +217,13 @@ export default function ProduitPage() {
   const handleAdd = () => {
     if (!product) return;
     if (!size) {
-      // Forcer l'utilisateur à choisir une taille — scroll vers le sélecteur
-      const el = document.querySelector(".size-grid");
+      // Champ taille obligatoire — on signale en rouge + scroll + shake.
+      setSizeError(true);
+      const el = document.querySelector(".size-block");
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    setSizeError(false);
     addItem({
       productId: product.id,
       slug: product.slug,
@@ -432,9 +435,9 @@ export default function ProduitPage() {
           </div>
 
           {/* SIZE */}
-          <div className="option-block">
+          <div className={`option-block size-block${sizeError ? " has-error" : ""}`}>
             <div className="option-label">
-              Taille <span>{size || "Choisir"}</span>
+              Taille <span>{size || (sizeError ? "Sélection requise" : "Choisir")}</span>
             </div>
             <div className="size-grid">
               {SIZES.map((s) => (
@@ -444,13 +447,22 @@ export default function ProduitPage() {
                   className={`size-btn${s.soldout ? " soldout" : ""}${
                     s.label === size ? " active" : ""
                   }`}
-                  onClick={() => !s.soldout && setSize(s.label)}
+                  onClick={() => {
+                    if (s.soldout) return;
+                    setSize(s.label);
+                    setSizeError(false);
+                  }}
                   disabled={s.soldout}
                 >
                   {s.label}
                 </button>
               ))}
             </div>
+            {sizeError && (
+              <div className="size-error" role="alert">
+                Choisis une taille avant de continuer
+              </div>
+            )}
           </div>
 
           {/* COMPLÉMENT — Pack 2 flasques 500ml (upsell éditorial) */}
