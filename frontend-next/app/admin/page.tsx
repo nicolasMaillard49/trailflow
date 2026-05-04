@@ -122,12 +122,12 @@ export default function AdminDashboardPage() {
             <tbody>
               {data.recentOrders.map((o) => (
                 <tr key={o.id}>
-                  <td>{o.orderRef}</td>
-                  <td>{o.customerName}</td>
-                  <td>{o.customerEmail}</td>
-                  <td>{o.total.toFixed(2).replace(".", ",")}€</td>
-                  <td><span className={`status status-${o.status.toLowerCase()}`}>{STATUS_LABEL[o.status] || o.status}</span></td>
-                  <td>{new Date(o.createdAt).toLocaleDateString("fr-FR")}</td>
+                  <td data-label="N°">{o.orderRef}</td>
+                  <td data-label="Client">{o.customerName}</td>
+                  <td data-label="Email">{o.customerEmail}</td>
+                  <td data-label="Total">{o.total.toFixed(2).replace(".", ",")}€</td>
+                  <td data-label="Statut"><span className={`status status-${o.status.toLowerCase()}`}>{STATUS_LABEL[o.status] || o.status}</span></td>
+                  <td data-label="Date">{new Date(o.createdAt).toLocaleDateString("fr-FR")}</td>
                 </tr>
               ))}
             </tbody>

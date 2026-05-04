@@ -1860,6 +1860,10 @@ footer {
   display: flex; flex-direction: column;
   position: sticky; top: 0; height: 100vh;
 }
+
+/* TOP BAR MOBILE — invisible en desktop, sticky en mobile */
+.admin-topbar { display: none; }
+.admin-drawer-backdrop, .admin-drawer { display: none; }
 .admin-logo {
   font-family: 'Cormorant Garamond', serif;
   font-weight: 300; font-size: 22px;
@@ -2214,18 +2218,199 @@ footer {
   color: var(--muted); text-align: center; margin-bottom: 8px;
 }
 
+/* === RESPONSIVE BACK-OFFICE — pattern top-bar + drawer slide-in === */
+
 @media (max-width: 900px) {
   .admin-shell { grid-template-columns: 1fr; }
-  .admin-side {
-    position: static; height: auto;
-    flex-direction: row; flex-wrap: wrap;
-    padding: 16px 24px;
+
+  /* Sidebar desktop masquée */
+  .admin-side { display: none; }
+
+  /* Top bar : sticky, hauteur 56px, logo + page actuelle + burger */
+  .admin-topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 0 18px;
+    height: 56px;
+    background: var(--ink-soft);
+    border-bottom: 0.5px solid rgba(240,237,232,0.08);
+    position: sticky; top: 0; z-index: 50;
   }
-  .admin-logo { margin-bottom: 0; flex: 1; flex-direction: row; align-items: baseline; gap: 10px; }
-  .admin-nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
-  .admin-side-foot { flex-direction: row; padding: 0; border: none; margin: 0; gap: 12px; }
-  .admin-main { padding: 32px 20px; }
-  .admin-order-body { grid-template-columns: 1fr; }
+  .admin-topbar-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300; font-size: 16px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--cream); text-decoration: none;
+    line-height: 1;
+  }
+  .admin-topbar-logo span { color: var(--muted); }
+  .admin-topbar-current {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-weight: 300;
+    font-size: 14px; color: var(--cream-dk);
+    text-align: center;
+    letter-spacing: 0.04em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* Burger : 3 traits fins, anim → croix */
+  .admin-burger {
+    display: flex; flex-direction: column; justify-content: center;
+    width: 32px; height: 32px;
+    background: transparent; border: none; cursor: pointer;
+    padding: 0; gap: 5px;
+  }
+  .admin-burger span {
+    display: block; width: 22px; height: 1px;
+    background: var(--cream); margin-left: auto;
+    transition: transform 0.32s var(--ease), opacity 0.2s ease, width 0.32s var(--ease);
+    transform-origin: center;
+  }
+  .admin-burger span:nth-child(2) { width: 16px; }
+  .admin-burger:hover span:nth-child(2) { width: 22px; }
+  .admin-burger.is-open span:nth-child(1) { transform: translateY(6px) rotate(45deg); width: 22px; }
+  .admin-burger.is-open span:nth-child(2) { opacity: 0; }
+  .admin-burger.is-open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); width: 22px; }
+
+  /* Backdrop drawer */
+  .admin-drawer-backdrop {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(14, 14, 12, 0.72);
+    backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.32s ease;
+    z-index: 60;
+  }
+  .admin-drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  /* Drawer slide-in depuis la gauche */
+  .admin-drawer {
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0;
+    width: min(82vw, 320px); height: 100dvh;
+    background: var(--ink-soft);
+    border-right: 0.5px solid rgba(240,237,232,0.08);
+    padding: 32px 28px;
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform 0.4s var(--ease);
+    overflow-y: auto;
+  }
+  .admin-drawer.is-open { transform: translateX(0); }
+
+  /* Inside drawer : logo plus aéré, nav verticale plus aérée que sidebar desktop */
+  .admin-drawer .admin-logo {
+    margin-bottom: 36px;
+    font-size: 24px;
+  }
+  .admin-drawer .admin-nav-link {
+    padding: 16px 14px;
+    font-size: 12px;
+  }
+  .admin-drawer .admin-side-foot {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+  .admin-drawer .admin-side-link {
+    padding: 12px 14px;
+    font-size: 11px;
+  }
+
+  /* Main : padding mobile + reset margin haut (top bar prend la place) */
+  .admin-main { padding: 28px 20px 80px; }
+  .admin-order-body { grid-template-columns: 1fr; gap: 22px; }
+}
+
+/* Mobile small — < 600px : adaptations supplémentaires */
+@media (max-width: 600px) {
+  .admin-main { padding: 22px 16px 64px; }
+  .admin-h { margin-bottom: 28px; }
+  .admin-h h1 { font-size: clamp(28px, 8vw, 36px); }
+  .admin-h p { font-size: 11px; letter-spacing: 0.14em; }
+  .admin-section { margin-bottom: 36px; }
+  .admin-stats { grid-template-columns: 1fr 1fr; }
+  .admin-stat { padding: 22px 18px; }
+  .admin-stat-num { font-size: 28px; }
+  .admin-margin-grid { grid-template-columns: 1fr 1fr; }
+  .admin-margin-grid > div { padding: 18px 16px; }
+
+  /* Order card : header stack, status select pleine largeur */
+  .admin-order-card { padding: 18px 16px; }
+  .admin-order-card header {
+    flex-direction: column; align-items: stretch; gap: 12px;
+  }
+  .admin-order-card header > div {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .admin-order-card header strong { margin-right: 0; }
+  .status-select { width: 100%; text-align: center; padding: 8px; }
+
+  /* Bundle/product cards : 1 colonne pleine */
+  .admin-bundles { grid-template-columns: 1fr; }
+  .admin-products { grid-template-columns: 1fr; }
+  .admin-product-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .admin-product-img {
+    width: 100%; height: 180px; max-width: 220px;
+    margin: 0 auto;
+  }
+  .admin-product-body header { justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .admin-product-prices { grid-template-columns: 1fr 1fr; gap: 8px; }
+}
+
+/* ============================================================
+   TABLE → LISTE DE CARDS sur mobile (< 700px)
+   Plus refined qu'un scroll horizontal sur la table dashboard.
+   Chaque <tr> devient une card, chaque <td> exposé avec son
+   label pris depuis data-label="...".
+   ============================================================ */
+@media (max-width: 700px) {
+  .admin-table thead {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+    display: block; width: 100%;
+  }
+  .admin-table tr {
+    background: rgba(240,237,232,0.03);
+    border: 0.5px solid rgba(240,237,232,0.06);
+    border-radius: 3px;
+    padding: 14px 16px 6px;
+    margin-bottom: 10px;
+  }
+  .admin-table tr:hover td { background: transparent; }
+  .admin-table td {
+    padding: 8px 0;
+    border-bottom: 0.5px solid rgba(240,237,232,0.05);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 14px;
+    font-size: 12.5px;
+  }
+  .admin-table td:last-child { border-bottom: none; }
+  .admin-table td::before {
+    content: attr(data-label);
+    font-family: 'Geist', sans-serif;
+    font-size: 9.5px; font-weight: 300;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .admin-table td:first-child {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-weight: 400;
+    font-size: 16px;
+    color: var(--cream);
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+    border-bottom: 0.5px solid rgba(240,237,232,0.1);
+  }
+  .admin-table td:first-child::before { display: none; }
 }
 
 .admin-margin-grid {
