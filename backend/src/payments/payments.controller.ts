@@ -9,6 +9,9 @@ import type { Request } from 'express';
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
+  // Anti-spam : un acheteur légitime ne crée que 1-2 checkouts/min. 5/min/IP
+  // évite qu'un script bourre la table Order de PENDING fantômes.
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('create-checkout')
   createCheckout(@Body() dto: CreateCheckoutDto) {
     return this.paymentsService.createCheckoutSession(dto);
