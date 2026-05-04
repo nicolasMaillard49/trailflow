@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { BundlesService } from '../bundles/bundles.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { MetaCapiService } from '../meta-capi/meta-capi.service';
 
 const mockStripe = {
   checkout: {
@@ -33,6 +34,7 @@ describe('PaymentsService', () => {
   let bundlesService: { findById: jest.Mock };
   let emailService: { sendOrderConfirmation: jest.Mock; sendShippingNotification: jest.Mock };
   let trackingService: { generateMagicLink: jest.Mock };
+  let metaCapi: { sendPurchase: jest.Mock; isConfigured: jest.Mock };
 
   const customerFields = {
     customerName: 'Jean Dupont',
@@ -72,6 +74,10 @@ describe('PaymentsService', () => {
     trackingService = {
       generateMagicLink: jest.fn().mockReturnValue('https://example.test/suivi?token=mock'),
     };
+    metaCapi = {
+      sendPurchase: jest.fn().mockResolvedValue(undefined),
+      isConfigured: jest.fn().mockReturnValue(false),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -87,6 +93,7 @@ describe('PaymentsService', () => {
         },
         { provide: BundlesService, useValue: bundlesService },
         { provide: TrackingService, useValue: trackingService },
+        { provide: MetaCapiService, useValue: metaCapi },
       ],
     }).compile();
 

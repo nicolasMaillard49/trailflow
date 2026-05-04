@@ -84,6 +84,7 @@ export type SessionStatus = {
     total: number;
     status: string;
     trackingMagicLink: string;
+    metaEventId: string | null;
     items: { productId: string; name: string; quantity: number; price: number }[];
   } | null;
 };
@@ -116,6 +117,7 @@ export function parseSessionStatus(raw: unknown): SessionStatus {
       total: num(o.total, "order.total"),
       status: str(o.status, "order.status"),
       trackingMagicLink: str(o.trackingMagicLink, "order.trackingMagicLink"),
+      metaEventId: o.metaEventId == null ? null : str(o.metaEventId, "order.metaEventId"),
       items: arr(o.items ?? [], "order.items", (x, p) => {
         if (!isObj(x)) throw new SchemaError(`${p}: expected object`);
         return {

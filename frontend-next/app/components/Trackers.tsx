@@ -71,12 +71,28 @@ type TrackPayload = Record<string, string | number | boolean | undefined>;
 declare global {
   interface Window {
     gtag?: (command: string, action: string, params?: TrackPayload) => void;
-    fbq?: (command: string, event: string, params?: TrackPayload) => void;
+    fbq?: (command: string, event: string, params?: TrackPayload, options?: { eventID?: string }) => void;
   }
 }
 
-export function trackEvent(name: string, payload?: TrackPayload) {
+export function trackEvent(name: string, payload?: TrackPayload, options?: { eventID?: string }) {
   if (typeof window === "undefined") return;
   if (typeof window.gtag === "function") window.gtag("event", name, payload);
-  if (typeof window.fbq === "function") window.fbq("track", name, payload);
+  if (typeof window.fbq === "function") {
+    // Le 4e arg de fbq est utilisé par Meta pour dédoublonner avec un event
+    // identique envoyé par la Conversions API server-side. Indispensable
+    // pour Purchase quand CAPI est branchée.
+    if (options?.eventID) {
+      window.fbq("track", name, payload, { eventID: options.eventID });
+    } else {
+      window.fbq("track", name, payload);
+    }
+  }
+}
+
+/** Lit un cookie côté client (utile pour récupérer _fbp / _fbc avant POST). */
+export function readCookie(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const m = document.cookie.match(new RegExp(`(^|;\\s*)${name}=([^;]+)`));
+  return m ? decodeURIComponent(m[2]) : undefined;
 }

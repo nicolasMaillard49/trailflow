@@ -98,4 +98,15 @@ export class CreateCheckoutDto {
   @ValidateNested()
   @Type(() => ShippingAddressDto)
   shippingAddress: ShippingAddressDto;
+
+  // --- Meta CAPI : cookies & UA capturés client pour matcher l'attribution
+  // Meta dans le webhook server-side. Tous optionnels — l'absence dégrade
+  // juste légèrement la qualité du matching (Meta utilise alors email + IP).
+  @IsOptional()
+  @IsString()
+  metaFbp?: string;
+
+  @IsOptional()
+  @IsString()
+  metaFbc?: string;
 }

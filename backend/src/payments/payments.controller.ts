@@ -13,8 +13,12 @@ export class PaymentsController {
   // évite qu'un script bourre la table Order de PENDING fantômes.
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('create-checkout')
-  createCheckout(@Body() dto: CreateCheckoutDto) {
-    return this.paymentsService.createCheckoutSession(dto);
+  createCheckout(@Body() dto: CreateCheckoutDto, @Req() req: Request) {
+    // Capture IP + UA depuis la requête pour Meta CAPI (req.ip respecte
+    // X-Forwarded-For côté Vercel/Railway si trust proxy est OK).
+    const clientIp = (req.headers['x-forwarded-for']?.toString().split(',')[0].trim()) || req.ip;
+    const clientUserAgent = req.headers['user-agent'];
+    return this.paymentsService.createCheckoutSession(dto, { clientIp, clientUserAgent });
   }
 
   @Post('webhook')

@@ -43,6 +43,14 @@ model Order {
   trackingUrl     String?
   supplierOrderId String?
   supplierUrl     String?
+  // Meta Conversions API : event_id partagé avec le Pixel client pour
+  // dédoublonner Purchase. fbp/fbc/UA/IP capturés au checkout-create
+  // pour matcher l'attribution Meta dans le webhook server-side.
+  metaEventId        String?
+  metaFbp            String?
+  metaFbc            String?
+  metaClientUa       String?
+  metaClientIp       String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

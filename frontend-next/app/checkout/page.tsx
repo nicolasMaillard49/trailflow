@@ -11,7 +11,7 @@ import { api } from "../lib/api";
 import { parseCheckoutCreate } from "../lib/schemas";
 import { CartIcon } from "../components/CartDrawer";
 import { SiteFooter } from "../components/SiteFooter";
-import { trackEvent } from "../components/Trackers";
+import { trackEvent, readCookie } from "../components/Trackers";
 
 /**
  * Stripe EmbeddedCheckoutProvider rappelle `fetchClientSecret` à chaque échec
@@ -167,6 +167,10 @@ export default function CheckoutPage() {
             country: form.country,
           },
           sport: "trail",
+          // Cookies Meta Pixel pour matcher l'attribution server-side dans
+          // le webhook Stripe → Conversions API (immune iOS 14.5 / blockers).
+          metaFbp: readCookie("_fbp"),
+          metaFbc: readCookie("_fbc"),
         }),
       });
       return res.clientSecret;

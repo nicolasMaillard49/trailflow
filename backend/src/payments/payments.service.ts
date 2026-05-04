@@ -1,10 +1,12 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { BundlesService } from '../bundles/bundles.service';
 import { TrackingService } from '../tracking/tracking.service';
+import { MetaCapiService } from '../meta-capi/meta-capi.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 @Injectable()
@@ -19,6 +21,7 @@ export class PaymentsService {
     private emailService: EmailService,
     private bundlesService: BundlesService,
     private trackingService: TrackingService,
+    private metaCapi: MetaCapiService,
   ) {
     this.stripe = new Stripe(this.configService.getOrThrow('STRIPE_SECRET_KEY'));
     this.frontendUrl = this.resolveFrontendUrl();
@@ -44,7 +47,10 @@ export class PaymentsService {
     return raw.replace(/\/+$/, '');
   }
 
-  async createCheckoutSession(dto: CreateCheckoutDto) {
+  async createCheckoutSession(
+    dto: CreateCheckoutDto,
+    metaContext?: { clientIp?: string; clientUserAgent?: string },
+  ) {
     let totalCents: number;
     let orderItems: {
       productId: string;
@@ -144,6 +150,10 @@ export class PaymentsService {
 
     const total = totalCents / 100;
 
+    // Meta CAPI context : event_id partagé client/server pour dédoublonner
+    // Purchase, + cookies fbp/fbc + IP + UA pour matcher l'attribution.
+    const metaEventId = randomUUID();
+
     const order = await this.prisma.order.create({
       data: {
         customerEmail: dto.customerEmail,
@@ -157,6 +167,11 @@ export class PaymentsService {
           country: dto.shippingAddress.country || 'FR',
         },
         total,
+        metaEventId,
+        metaFbp: dto.metaFbp || null,
+        metaFbc: dto.metaFbc || null,
+        metaClientIp: metaContext?.clientIp || null,
+        metaClientUa: metaContext?.clientUserAgent || null,
         items: {
           create: orderItems,
         },
@@ -255,6 +270,40 @@ export class PaymentsService {
         shippingAddress: order.shippingAddress as any,
         trackingMagicLink: magicLink,
       });
+
+      // Meta Conversions API — Purchase server-side (immune iOS 14.5 / blockers).
+      // Dédoublonné côté Meta via metaEventId partagé avec le Pixel client.
+      // Fire & forget : un échec CAPI ne doit pas bloquer le webhook.
+      if (order.metaEventId) {
+        const shipping = (order.shippingAddress as Record<string, string>) ?? {};
+        const [firstName, ...rest] = (order.customerName || '').trim().split(/\s+/);
+        const lastName = rest.join(' ');
+        void this.metaCapi.sendPurchase({
+          eventId: order.metaEventId,
+          eventSourceUrl: `${this.frontendUrl}/confirmation`,
+          user: {
+            email: order.customerEmail,
+            phone: order.customerPhone || undefined,
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            city: shipping.city,
+            postalCode: shipping.postalCode,
+            country: shipping.country,
+            fbp: order.metaFbp || undefined,
+            fbc: order.metaFbc || undefined,
+            clientIp: order.metaClientIp || undefined,
+            clientUserAgent: order.metaClientUa || undefined,
+          },
+          customData: {
+            value: order.total,
+            currency: 'EUR',
+            contentIds: order.items.map((i) => i.productId),
+            contents: order.items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+            numItems: order.items.reduce((s, i) => s + i.quantity, 0),
+            orderId: order.id,
+          },
+        });
+      }
     }
 
     return { received: true };
@@ -302,6 +351,8 @@ export class PaymentsService {
             createdAt: order.createdAt,
             // Magic link signé pour suivre la commande sans login
             trackingMagicLink: this.trackingService.generateMagicLink(order.id),
+            // event_id Meta — partagé avec la balise Pixel client pour dédup.
+            metaEventId: order.metaEventId,
             items: order.items.map((i) => ({
               productId: i.productId,
               name: i.product?.name || 'Article',
