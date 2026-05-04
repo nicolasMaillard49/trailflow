@@ -62,9 +62,13 @@ export function CartDrawer() {
                   </div>
                   <div className="cart-info">
                     <div className="cart-name">{item.name}</div>
-                    <div className="cart-meta">
-                      Taille {item.size} · {item.color}
-                    </div>
+                    {(item.size || item.color) && (
+                      <div className="cart-meta">
+                        {[item.size && `Taille ${item.size}`, item.color]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    )}
                     <div className="cart-qty">
                       <button onClick={() => setQuantity(item.slug, item.size, item.color, item.quantity - 1)} aria-label="Diminuer">−</button>
                       <span>{item.quantity}</span>

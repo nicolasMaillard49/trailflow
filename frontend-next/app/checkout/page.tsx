@@ -110,18 +110,19 @@ export default function CheckoutPage() {
       throw new Error(msg);
     }
 
-    const first = items[0];
     try {
       const res = await api("/payments/create-checkout", {
         method: "POST",
         parse: parseCheckoutCreate,
         body: JSON.stringify({
-          productId: first.productId,
-          quantity: first.quantity,
-          // Taille et coloris choisis — persistés sur l'order item, repris
-          // dans l'email de confirmation et la page admin pour le SAV.
-          size: first.size,
-          color: first.color,
+          // On envoie l'intégralité du panier — chaque item devient un line_item
+          // Stripe et un OrderItem distinct (taille/coloris persistés pour le SAV).
+          items: items.map((it) => ({
+            productId: it.productId,
+            quantity: it.quantity,
+            size: it.size,
+            color: it.color,
+          })),
           customerEmail: form.customerEmail,
           customerName: form.customerName,
           customerPhone: form.customerPhone,
@@ -333,7 +334,9 @@ export default function CheckoutPage() {
                     <div className="checkout-item-info">
                       <div className="checkout-item-name">{it.name}</div>
                       <div className="checkout-item-meta">
-                        Taille {it.size} · {it.color} · ×{it.quantity}
+                        {[it.size && `Taille ${it.size}`, it.color, `×${it.quantity}`]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </div>
                     </div>
                     <div className="checkout-item-price">

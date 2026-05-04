@@ -26,20 +26,43 @@ describe('CreateCheckoutDto', () => {
     expect(errors).toHaveLength(0);
   });
 
-  it('should fail when productId is missing', async () => {
-    const { productId, ...rest } = validBase;
-    const dto = toDto(rest);
+  it('should pass with items array (multi-line cart, no top-level productId)', async () => {
+    const { productId, quantity, ...rest } = validBase;
+    const dto = toDto({
+      ...rest,
+      items: [
+        { productId: 'prod-vest', quantity: 1, size: 'M', color: 'Gris perle' },
+        { productId: 'prod-flask', quantity: 1 },
+      ],
+    });
     const errors = await validate(dto);
-    expect(errors.some((e) => e.property === 'productId')).toBe(true);
+    expect(errors).toHaveLength(0);
   });
 
-  it('should fail when quantity is less than 1', async () => {
+  it('should fail when items is empty array', async () => {
+    const { productId, quantity, ...rest } = validBase;
+    const dto = toDto({ ...rest, items: [] });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'items')).toBe(true);
+  });
+
+  it('should fail when an item in items has invalid quantity', async () => {
+    const { productId, quantity, ...rest } = validBase;
+    const dto = toDto({
+      ...rest,
+      items: [{ productId: 'prod-1', quantity: 0 }],
+    });
+    const errors = await validate(dto);
+    expect(errors.some((e) => e.property === 'items')).toBe(true);
+  });
+
+  it('should fail when top-level quantity is less than 1', async () => {
     const dto = toDto({ ...validBase, quantity: 0 });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'quantity')).toBe(true);
   });
 
-  it('should fail when quantity exceeds 10', async () => {
+  it('should fail when top-level quantity exceeds 10', async () => {
     const dto = toDto({ ...validBase, quantity: 11 });
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'quantity')).toBe(true);

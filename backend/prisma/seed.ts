@@ -57,18 +57,26 @@ async function main() {
     },
   });
 
-  // Upsell flasques 500ml (cf. todo moyen terme — bundle prêt)
+  // Upsell flasques 500ml — exposé en add-on cochable sur /produit
   const flasques = await prisma.product.upsert({
     where: { slug: 'flasques-500ml' },
-    update: { name: 'Pack 2 flasques 500ml', images: ['/images/flasques.png'] },
+    update: {
+      name: 'Pack 2 flasques 500ml',
+      price: 15,
+      costPrice: 3.5,
+      images: ['/images/flasks/pack-2-flasks.png'],
+      stripeImage: '/images/flasks/pack-2-flasks.png',
+      active: true,
+    },
     create: {
       name: 'Pack 2 flasques 500ml',
       slug: 'flasques-500ml',
-      description: 'Pack de 2 flasques souples 500ml compatibles avec les poches avant du gilet.',
-      price: 7.9,
-      costPrice: 2.5,
-      images: ['/images/flasques.png'],
-      active: false, // vendues uniquement en bundle pour l'instant
+      description: 'Pack de 2 flasques souples 500ml compatibles avec les poches avant du gilet. Bouchon push-pull, dragonne intégrée.',
+      price: 15,
+      costPrice: 3.5,
+      images: ['/images/flasks/pack-2-flasks.png'],
+      stripeImage: '/images/flasks/pack-2-flasks.png',
+      active: true,
     },
   });
 

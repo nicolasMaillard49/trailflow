@@ -1,4 +1,4 @@
-import { IsString, IsInt, Min, Max, IsOptional, IsEmail, ValidateNested, IsNotEmpty, IsDefined } from 'class-validator';
+import { IsString, IsInt, Min, Max, IsOptional, IsEmail, ValidateNested, IsNotEmpty, IsDefined, IsArray, ArrayMinSize, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ShippingAddressDto {
@@ -23,7 +23,7 @@ export class ShippingAddressDto {
   country?: string;
 }
 
-export class CreateCheckoutDto {
+export class CheckoutItemDto {
   @IsString()
   productId: string;
 
@@ -32,6 +32,48 @@ export class CreateCheckoutDto {
   @Max(10)
   quantity: number;
 
+  /** Taille choisie (S, M, L, XL…). Vide pour les add-ons sans taille. */
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  /** Coloris choisi. Vide pour les add-ons sans coloris. */
+  @IsOptional()
+  @IsString()
+  color?: string;
+}
+
+export class CreateCheckoutDto {
+  // --- Multi-items (utilisé par /checkout depuis le panier multi-lignes) ---
+  // Si fourni et non vide, prime sur productId/quantity/size/color au top-level.
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => CheckoutItemDto)
+  items?: CheckoutItemDto[];
+
+  // --- Solo (rétrocompat tests + bundles) ---
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  quantity?: number;
+
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  @IsOptional()
+  @IsString()
+  color?: string;
+
+  // --- Bundle ---
   @IsOptional()
   @IsString()
   bundleId?: string;
@@ -40,17 +82,7 @@ export class CreateCheckoutDto {
   @IsString()
   sport?: string;
 
-  /** Taille choisie (S, M, L, XL…). Stockée sur l'order item, utile au SAV
-   * et à la prépa du colis fournisseur. */
-  @IsOptional()
-  @IsString()
-  size?: string;
-
-  /** Coloris choisi ("Gris perle", "Noir nuit", "Bleu pastel"). Idem. */
-  @IsOptional()
-  @IsString()
-  color?: string;
-
+  // --- Customer ---
   @IsString()
   @IsNotEmpty()
   customerName: string;

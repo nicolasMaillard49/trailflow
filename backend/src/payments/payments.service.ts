@@ -45,13 +45,7 @@ export class PaymentsService {
   }
 
   async createCheckoutSession(dto: CreateCheckoutDto) {
-    const product = await this.prisma.product.findUniqueOrThrow({
-      where: { id: dto.productId },
-    });
-
     let totalCents: number;
-    let stripeUnitAmount: number;
-    let displayName: string;
     let orderItems: {
       productId: string;
       quantity: number;
@@ -60,16 +54,22 @@ export class PaymentsService {
       size: string | null;
       color: string | null;
     }[];
+    let stripeLineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
 
     if (dto.bundleId) {
+      // --- Bundle path : un seul line item Stripe agrégé au prix du bundle.
       const bundle = await this.bundlesService.findById(dto.bundleId);
       if (!bundle.active) {
         throw new BadRequestException('This bundle is no longer available');
       }
 
+      // On charge le produit "principal" (passé au top-level dto.productId)
+      // pour récupérer image + description côté Stripe.
+      const product = await this.prisma.product.findUniqueOrThrow({
+        where: { id: dto.productId! },
+      });
+
       totalCents = Math.round(bundle.price * 100);
-      stripeUnitAmount = totalCents;
-      displayName = bundle.label;
 
       const totalQty = bundle.items.reduce((sum, i) => sum + i.quantity, 0);
       orderItems = bundle.items.map((item) => ({
@@ -77,24 +77,69 @@ export class PaymentsService {
         quantity: item.quantity,
         price: (bundle.price / totalQty) * item.quantity,
         bundleSlug: bundle.slug,
-        // Bundle = combo avec choix au moment de la prépa, on n'enregistre pas
-        // de taille/couleur ici — l'acheteur choisira au SAV si besoin.
         size: null,
         color: null,
       }));
-    } else {
-      totalCents = Math.round(product.price * dto.quantity * 100);
-      stripeUnitAmount = totalCents;
-      displayName = dto.quantity > 1 ? `${product.name} x ${dto.quantity}` : product.name;
 
-      orderItems = [{
-        productId: product.id,
-        quantity: dto.quantity,
-        price: product.price,
-        bundleSlug: null,
-        size: dto.size || null,
-        color: dto.color || null,
+      stripeLineItems = [{
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: bundle.label,
+            description: product.description,
+            images: this.buildStripeImages(product.stripeImage || product.images[0]),
+          },
+          unit_amount: totalCents,
+        },
+        quantity: 1,
       }];
+    } else {
+      // --- Multi-items path : 1 line item Stripe par item du panier.
+      // Normalise : si dto.items présent, on l'utilise. Sinon on construit
+      // depuis les champs solo top-level (rétrocompat tests + appels legacy).
+      const inputs = dto.items?.length
+        ? dto.items
+        : [{
+            productId: dto.productId!,
+            quantity: dto.quantity!,
+            size: dto.size,
+            color: dto.color,
+          }];
+
+      // Charge tous les produits en parallèle.
+      const products = await Promise.all(
+        inputs.map((it) =>
+          this.prisma.product.findUniqueOrThrow({ where: { id: it.productId } }),
+        ),
+      );
+
+      totalCents = inputs.reduce(
+        (sum, it, i) => sum + Math.round(products[i].price * it.quantity * 100),
+        0,
+      );
+
+      orderItems = inputs.map((it, i) => ({
+        productId: products[i].id,
+        quantity: it.quantity,
+        price: products[i].price,
+        bundleSlug: null,
+        // "" → null pour rester cohérent avec la colonne nullable côté Prisma.
+        size: it.size || null,
+        color: it.color || null,
+      }));
+
+      stripeLineItems = inputs.map((it, i) => ({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: products[i].name,
+            description: products[i].description,
+            images: this.buildStripeImages(products[i].stripeImage || products[i].images[0]),
+          },
+          unit_amount: Math.round(products[i].price * 100),
+        },
+        quantity: it.quantity,
+      }));
     }
 
     const total = totalCents / 100;
@@ -124,25 +169,7 @@ export class PaymentsService {
       mode: 'payment',
       customer_email: dto.customerEmail,
       allow_promotion_codes: true,
-      line_items: [
-        {
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: displayName,
-              description: product.description,
-              images: (() => {
-                const img = product.stripeImage || product.images[0];
-                if (!img) return [];
-                const url = img.startsWith('http') ? img : `${this.frontendUrl}${img}`;
-                return [url];
-              })(),
-            },
-            unit_amount: stripeUnitAmount,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: stripeLineItems,
       metadata: { orderId: order.id, sport: dto.sport || '' },
       return_url: `${this.frontendUrl}/confirmation?session_id={CHECKOUT_SESSION_ID}`,
     });
@@ -153,6 +180,12 @@ export class PaymentsService {
     });
 
     return { sessionId: session.id, clientSecret: session.client_secret };
+  }
+
+  private buildStripeImages(img: string | null | undefined): string[] {
+    if (!img) return [];
+    const url = img.startsWith('http') ? img : `${this.frontendUrl}${img}`;
+    return [url];
   }
 
   async handleWebhook(payload: Buffer, signature: string) {

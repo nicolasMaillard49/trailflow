@@ -764,6 +764,65 @@ footer {
   border-radius: 50%; border: 0.5px solid var(--cream-dk);
 }
 
+/* UPSELL ADDON — pack 2 flasques 500ml entre Taille et Qty/CTA */
+.upsell-addon {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  margin-bottom: 24px;
+  border: 0.5px solid rgba(240,237,232,0.2); border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.upsell-addon:hover { border-color: rgba(240,237,232,0.4); }
+.upsell-addon.checked { border-color: var(--cream); background: rgba(240,237,232,0.04); }
+.upsell-checkbox {
+  position: absolute; opacity: 0; pointer-events: none;
+  width: 0; height: 0;
+}
+.upsell-box {
+  width: 18px; height: 18px; flex-shrink: 0;
+  border: 0.5px solid rgba(240,237,232,0.4);
+  border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink);
+  background: transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.upsell-addon.checked .upsell-box {
+  background: var(--cream);
+  border-color: var(--cream);
+}
+.upsell-box svg { opacity: 0; transition: opacity 0.15s ease; }
+.upsell-addon.checked .upsell-box svg { opacity: 1; }
+.upsell-img {
+  width: 44px; height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: rgba(240,237,232,0.04);
+}
+.upsell-body { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.upsell-name {
+  font-size: 13px; color: var(--cream);
+  font-weight: 400; letter-spacing: 0.01em;
+}
+.upsell-meta {
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.upsell-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px; color: var(--cream); flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .upsell-addon { padding: 12px; gap: 10px; }
+  .upsell-img { width: 40px; height: 40px; }
+  .upsell-name { font-size: 12px; }
+  .upsell-meta { font-size: 10px; }
+  .upsell-price { font-size: 16px; }
+}
+
 .qty-cta { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 .qty-cta .btn-add { min-width: 0; }
 .qty-wrap {

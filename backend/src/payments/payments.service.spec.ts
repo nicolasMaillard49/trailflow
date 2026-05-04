@@ -214,6 +214,73 @@ describe('PaymentsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('should create multi-item checkout (vest + flask addon)', async () => {
+      const vest = { ...product, id: 'prod-vest', name: 'Gilet TrailFlow', price: 34.9 };
+      const flask = { id: 'prod-flask', name: 'Pack 2 flasques 500ml', description: 'flasques', price: 15, images: [], stripeImage: null };
+      // Deux fetch consécutifs (Promise.all interne) — on prépare la stub.
+      prisma.product.findUniqueOrThrow
+        .mockResolvedValueOnce(vest)
+        .mockResolvedValueOnce(flask);
+      prisma.order.create.mockResolvedValue({ id: 'order-multi' });
+      prisma.order.update.mockResolvedValue({});
+      mockStripe.checkout.sessions.create.mockResolvedValue({
+        id: 'cs_multi',
+        client_secret: 'cs_multi_secret',
+      });
+
+      const result = await service.createCheckoutSession({
+        items: [
+          { productId: 'prod-vest', quantity: 1, size: 'M', color: 'Gris perle' },
+          { productId: 'prod-flask', quantity: 1 }, // pas de size/color
+        ],
+        ...customerFields,
+      });
+
+      // 2 OrderItems créés avec size/color normalisés "" → null pour la flasque.
+      expect(prisma.order.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            total: 49.9,
+            items: expect.objectContaining({
+              create: [
+                expect.objectContaining({
+                  productId: 'prod-vest', quantity: 1, price: 34.9,
+                  size: 'M', color: 'Gris perle', bundleSlug: null,
+                }),
+                expect.objectContaining({
+                  productId: 'prod-flask', quantity: 1, price: 15,
+                  size: null, color: null, bundleSlug: null,
+                }),
+              ],
+            }),
+          }),
+        }),
+      );
+
+      // 2 line_items Stripe avec leurs prix unitaires respectifs.
+      const stripeCall = mockStripe.checkout.sessions.create.mock.calls[0][0];
+      expect(stripeCall.line_items).toHaveLength(2);
+      expect(stripeCall.line_items[0]).toEqual(
+        expect.objectContaining({
+          quantity: 1,
+          price_data: expect.objectContaining({
+            unit_amount: 3490,
+            product_data: expect.objectContaining({ name: 'Gilet TrailFlow' }),
+          }),
+        }),
+      );
+      expect(stripeCall.line_items[1]).toEqual(
+        expect.objectContaining({
+          quantity: 1,
+          price_data: expect.objectContaining({
+            unit_amount: 1500,
+            product_data: expect.objectContaining({ name: 'Pack 2 flasques 500ml' }),
+          }),
+        }),
+      );
+      expect(result.sessionId).toBe('cs_multi');
+    });
+
     it('should not crash when images[0] is undefined', async () => {
       const productNoImages = { ...product, images: [] };
       prisma.product.findUniqueOrThrow.mockResolvedValue(productNoImages);

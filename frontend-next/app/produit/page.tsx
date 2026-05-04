@@ -110,6 +110,10 @@ export default function ProduitPage() {
   const [loadError, setLoadError] = useState(false);
   // Fade-out bref pendant le swap de couleur (carrousel + thumbnails).
   const [colorSwapping, setColorSwapping] = useState(false);
+  // Upsell pack 2 flasques 500ml — décoché par défaut (conforme art. L121-17
+  // Code conso, pas de pré-cochage de prestation supplémentaire payante).
+  const [addonChecked, setAddonChecked] = useState(false);
+  const [addonProduct, setAddonProduct] = useState<Product | null>(null);
 
   const variant = COLOR_VARIANTS.find((c) => c.name === color) ?? COLOR_VARIANTS[0];
   const IMAGES = variant.gallery;
@@ -194,6 +198,20 @@ export default function ProduitPage() {
     };
   }, []);
 
+  // Fetch de l'add-on flasques en parallèle. Échec silencieux : si le produit
+  // n'est pas dispo, la card est masquée plutôt que de bloquer la page.
+  useEffect(() => {
+    let cancelled = false;
+    api("/products/flasques-500ml", { parse: parseProduct })
+      .then((p) => {
+        if (!cancelled) setAddonProduct(p);
+      })
+      .catch(() => { /* silencieux */ });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleAdd = () => {
     if (!product) return;
     if (!size) {
@@ -212,8 +230,6 @@ export default function ProduitPage() {
       quantity: qty,
       image: variant.cartImage,
     });
-    setAdded(true);
-    showToast(`${product.name} (${color}, taille ${size}) ajouté au panier`);
     trackEvent("AddToCart", {
       content_name: product.name,
       content_ids: product.id,
@@ -222,6 +238,36 @@ export default function ProduitPage() {
       size,
       color,
     });
+
+    // Upsell : si la case est cochée, on ajoute le pack flasques en ligne
+    // distincte (qty 1 fixe, indépendante du qty veste — un coureur qui
+    // achète 2 vestes pour son couple n'a pas forcément besoin de 4 flasques).
+    const withAddon = addonChecked && addonProduct;
+    if (withAddon) {
+      addItem({
+        productId: addonProduct.id,
+        slug: addonProduct.slug,
+        name: addonProduct.name,
+        size: "",
+        color: "",
+        price: addonProduct.price,
+        quantity: 1,
+        image: "/images/flasks/pack-2-flasks.png",
+      });
+      trackEvent("AddToCart", {
+        content_name: addonProduct.name,
+        content_ids: addonProduct.id,
+        value: addonProduct.price,
+        currency: "EUR",
+      });
+    }
+
+    setAdded(true);
+    showToast(
+      withAddon
+        ? `${product.name} + Pack flasques ajoutés au panier`
+        : `${product.name} (${color}, taille ${size}) ajouté au panier`,
+    );
     setTimeout(() => setAdded(false), 2000);
   };
 
@@ -399,6 +445,39 @@ export default function ProduitPage() {
               ))}
             </div>
           </div>
+
+          {/* UPSELL — Pack 2 flasques 500ml */}
+          {addonProduct && (
+            <label
+              className={`upsell-addon${addonChecked ? " checked" : ""}`}
+              data-checked={addonChecked}
+            >
+              <input
+                type="checkbox"
+                className="upsell-checkbox"
+                checked={addonChecked}
+                onChange={(e) => setAddonChecked(e.target.checked)}
+                aria-label={`Ajouter ${addonProduct.name} pour ${addonProduct.price}€`}
+              />
+              <span className="upsell-box" aria-hidden="true">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <Image
+                src="/images/flasks/pack-2-flasks.png"
+                alt=""
+                width={44}
+                height={44}
+                className="upsell-img"
+              />
+              <span className="upsell-body">
+                <span className="upsell-name">{addonProduct.name}</span>
+                <span className="upsell-meta">Compatible TrailFlow · Push-pull</span>
+              </span>
+              <span className="upsell-price">+{addonProduct.price}€</span>
+            </label>
+          )}
 
           {/* QTY + CTA */}
           <div className="qty-cta">
