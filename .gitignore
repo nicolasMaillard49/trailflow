@@ -43,6 +43,9 @@ coverage/
 # Vercel
 .vercel
 
+# Superpowers brainstorming visual companion
+.superpowers/
+
 # Assets bruts (à externaliser, trop lourd pour git)
 assets-raw/
 *.psd
