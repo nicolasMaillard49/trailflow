@@ -764,63 +764,158 @@ footer {
   border-radius: 50%; border: 0.5px solid var(--cream-dk);
 }
 
-/* UPSELL ADDON — pack 2 flasques 500ml entre Taille et Qty/CTA */
-.upsell-addon {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px;
-  margin-bottom: 24px;
-  border: 0.5px solid rgba(240,237,232,0.2); border-radius: 4px;
-  background: transparent;
+/* COMPLÉMENT — bloc upsell éditorial entre Taille et Qty/CTA.
+   Calque le rythme des .option-block (Coloris/Taille) avec un filet en
+   haut pour signaler le changement de catégorie d'option. */
+.addon {
+  display: block;
+  margin-bottom: 28px;
+  padding-top: 22px;
+  border-top: 0.5px solid rgba(240,237,232,0.12);
   cursor: pointer;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  position: relative;
 }
-.upsell-addon:hover { border-color: rgba(240,237,232,0.4); }
-.upsell-addon.checked { border-color: var(--cream); background: rgba(240,237,232,0.04); }
-.upsell-checkbox {
-  position: absolute; opacity: 0; pointer-events: none;
-  width: 0; height: 0;
+
+/* Checkbox visuellement masquée mais focusable au clavier. */
+.addon-input {
+  position: absolute;
+  width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
-.upsell-box {
-  width: 18px; height: 18px; flex-shrink: 0;
-  border: 0.5px solid rgba(240,237,232,0.4);
+
+.addon-eyebrow {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 14px;
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted);
+}
+.addon-state {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--cream-dk);
+  transition: color 0.32s ease;
+}
+.addon.is-on .addon-state { color: var(--green); }
+
+.addon-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  column-gap: 18px;
+  align-items: center;
+}
+
+/* Cadre crème "polaroid" — le fond clair fait dialoguer la photo
+   (BG blanc) avec le thème ink, sans bricolage de blend mode. */
+.addon-frame {
+  width: 56px; height: 56px;
+  background: var(--cream);
   border-radius: 2px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink);
-  background: transparent;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  padding: 4px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.upsell-addon.checked .upsell-box {
+.addon-frame::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border: 0.5px solid transparent;
+  border-radius: 4px;
+  pointer-events: none;
+  transition: border-color 0.32s ease;
+}
+.addon.is-on .addon-frame::after { border-color: var(--cream); }
+.addon:hover .addon-frame { transform: scale(1.04); }
+
+.addon-img {
+  object-fit: contain;
+  display: block;
+}
+
+.addon-text {
+  display: flex; flex-direction: column; gap: 5px;
+  min-width: 0;
+}
+.addon-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 19px;
+  line-height: 1.1;
+  color: var(--cream-dk);
+  transition: color 0.32s ease;
+}
+.addon.is-on .addon-title { color: var(--cream); }
+.addon-detail {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 300;
+}
+
+.addon-aside {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 10px;
+}
+.addon-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 19px;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Toggle pill — pas une checkbox cube, un indicateur premium. */
+.addon-toggle {
+  width: 38px; height: 20px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(240,237,232,0.4);
+  background: transparent;
+  position: relative;
+  transition: background-color 0.32s ease, border-color 0.32s ease;
+  flex-shrink: 0;
+}
+.addon-toggle-thumb {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 15px; height: 15px;
+  background: var(--cream-dk);
+  border-radius: 999px;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.32s ease;
+}
+.addon.is-on .addon-toggle {
   background: var(--cream);
   border-color: var(--cream);
 }
-.upsell-box svg { opacity: 0; transition: opacity 0.15s ease; }
-.upsell-addon.checked .upsell-box svg { opacity: 1; }
-.upsell-img {
-  width: 44px; height: 44px;
-  object-fit: contain;
-  flex-shrink: 0;
-  border-radius: 3px;
-  background: rgba(240,237,232,0.04);
+.addon.is-on .addon-toggle-thumb {
+  transform: translateX(17px);
+  background: var(--ink);
 }
-.upsell-body { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
-.upsell-name {
-  font-size: 13px; color: var(--cream);
-  font-weight: 400; letter-spacing: 0.01em;
+
+/* Focus visible (clavier) sur le toggle — accessibilité. */
+.addon-input:focus-visible ~ .addon-row .addon-toggle {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
 }
-.upsell-meta {
-  font-size: 11px; color: var(--muted);
-  letter-spacing: 0.02em;
-}
-.upsell-price {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 18px; color: var(--cream); flex-shrink: 0;
-}
+
 @media (max-width: 600px) {
-  .upsell-addon { padding: 12px; gap: 10px; }
-  .upsell-img { width: 40px; height: 40px; }
-  .upsell-name { font-size: 12px; }
-  .upsell-meta { font-size: 10px; }
-  .upsell-price { font-size: 16px; }
+  .addon { padding-top: 20px; margin-bottom: 24px; }
+  .addon-eyebrow { margin-bottom: 12px; }
+  .addon-row { grid-template-columns: 48px 1fr auto; column-gap: 14px; }
+  .addon-frame { width: 48px; height: 48px; padding: 4px; }
+  .addon-title { font-size: 17px; }
+  .addon-detail { font-size: 10.5px; }
+  .addon-price { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .addon-frame, .addon-toggle, .addon-toggle-thumb,
+  .addon-state, .addon-title { transition-duration: 0s; }
 }
 
 .qty-cta { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
