@@ -303,6 +303,7 @@ export class PaymentsService {
             // Magic link signé pour suivre la commande sans login
             trackingMagicLink: this.trackingService.generateMagicLink(order.id),
             items: order.items.map((i) => ({
+              productId: i.productId,
               name: i.product?.name || 'Article',
               quantity: i.quantity,
               price: i.price,

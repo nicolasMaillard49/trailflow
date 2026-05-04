@@ -25,10 +25,20 @@ function ConfirmationInner() {
         if (cancelled) return;
         setData(r);
         if (r.order) {
+          // Payload Meta complet : content_ids + contents alimentent les
+          // Dynamic Product Ads (retargeting post-achat) et améliorent
+          // l'optimisation ROAS / les Lookalike Audiences.
+          const items = r.order.items;
           trackEvent("Purchase", {
             transaction_id: r.order.orderNumber,
             value: r.order.total,
             currency: "EUR",
+            content_type: "product",
+            content_ids: items.map((i) => i.productId).join(","),
+            num_items: items.reduce((s, i) => s + i.quantity, 0),
+            contents: JSON.stringify(
+              items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+            ),
           });
           clear();
         }

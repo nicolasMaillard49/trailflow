@@ -11,6 +11,7 @@ import { api } from "../lib/api";
 import { parseCheckoutCreate } from "../lib/schemas";
 import { CartIcon } from "../components/CartDrawer";
 import { SiteFooter } from "../components/SiteFooter";
+import { trackEvent } from "../components/Trackers";
 
 /**
  * Stripe EmbeddedCheckoutProvider rappelle `fetchClientSecret` à chaque échec
@@ -48,6 +49,25 @@ export default function CheckoutPage() {
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  // InitiateCheckout — déclenché une seule fois quand le panier est rehydraté
+  // et non vide. Signal mid-funnel clé pour Meta Ads (audiences "likely to
+  // purchase", optimisation entre AddToCart et Purchase).
+  const initiateCheckoutFired = useRef(false);
+  useEffect(() => {
+    if (!hydrated || items.length === 0 || initiateCheckoutFired.current) return;
+    initiateCheckoutFired.current = true;
+    trackEvent("InitiateCheckout", {
+      value: total,
+      currency: "EUR",
+      content_type: "product",
+      content_ids: items.map((i) => i.productId).join(","),
+      num_items: items.reduce((s, i) => s + i.quantity, 0),
+      contents: JSON.stringify(
+        items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+      ),
+    });
+  }, [hydrated, items, total]);
   const [form, setForm] = useState<FormState>({
     customerName: "",
     customerEmail: "",
@@ -84,6 +104,19 @@ export default function CheckoutPage() {
       setError("Votre panier est vide.");
       return;
     }
+    // AddPaymentInfo — l'utilisateur a validé ses coordonnées et passe à
+    // l'étape Stripe. Signal high-intent indispensable pour les Lookalike
+    // Audiences et la Conversions API Meta.
+    trackEvent("AddPaymentInfo", {
+      value: total,
+      currency: "EUR",
+      content_type: "product",
+      content_ids: items.map((i) => i.productId).join(","),
+      num_items: items.reduce((s, i) => s + i.quantity, 0),
+      contents: JSON.stringify(
+        items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+      ),
+    });
     setStep("payment");
   };
 

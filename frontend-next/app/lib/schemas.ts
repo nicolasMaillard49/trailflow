@@ -84,7 +84,7 @@ export type SessionStatus = {
     total: number;
     status: string;
     trackingMagicLink: string;
-    items: { name: string; quantity: number; price: number }[];
+    items: { productId: string; name: string; quantity: number; price: number }[];
   } | null;
 };
 
@@ -119,6 +119,7 @@ export function parseSessionStatus(raw: unknown): SessionStatus {
       items: arr(o.items ?? [], "order.items", (x, p) => {
         if (!isObj(x)) throw new SchemaError(`${p}: expected object`);
         return {
+          productId: str(x.productId, `${p}.productId`),
           name: str(x.name, `${p}.name`),
           quantity: num(x.quantity, `${p}.quantity`),
           price: num(x.price, `${p}.price`),

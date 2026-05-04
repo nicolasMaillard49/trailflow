@@ -176,6 +176,7 @@ export default function ProduitPage() {
           trackEvent("ViewContent", {
             content_name: p.name,
             content_ids: p.id,
+            content_type: "product",
             value: p.price,
             currency: "EUR",
           });
@@ -233,8 +234,11 @@ export default function ProduitPage() {
     trackEvent("AddToCart", {
       content_name: product.name,
       content_ids: product.id,
+      content_type: "product",
       value: product.price * qty,
       currency: "EUR",
+      num_items: qty,
+      contents: JSON.stringify([{ id: product.id, quantity: qty, item_price: product.price }]),
       size,
       color,
     });
@@ -257,8 +261,11 @@ export default function ProduitPage() {
       trackEvent("AddToCart", {
         content_name: addonProduct.name,
         content_ids: addonProduct.id,
+        content_type: "product",
         value: addonProduct.price,
         currency: "EUR",
+        num_items: 1,
+        contents: JSON.stringify([{ id: addonProduct.id, quantity: 1, item_price: addonProduct.price }]),
       });
     }
 
@@ -446,36 +453,46 @@ export default function ProduitPage() {
             </div>
           </div>
 
-          {/* UPSELL — Pack 2 flasques 500ml */}
+          {/* COMPLÉMENT — Pack 2 flasques 500ml (upsell éditorial) */}
           {addonProduct && (
-            <label
-              className={`upsell-addon${addonChecked ? " checked" : ""}`}
-              data-checked={addonChecked}
-            >
+            <label className={`addon${addonChecked ? " is-on" : ""}`}>
               <input
                 type="checkbox"
-                className="upsell-checkbox"
+                className="addon-input"
                 checked={addonChecked}
                 onChange={(e) => setAddonChecked(e.target.checked)}
                 aria-label={`Ajouter ${addonProduct.name} pour ${addonProduct.price}€`}
               />
-              <span className="upsell-box" aria-hidden="true">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+              <span className="addon-eyebrow">
+                <span>Complément</span>
+                <span className="addon-state" aria-live="polite">
+                  {addonChecked ? "Inclus" : "Optionnel"}
+                </span>
               </span>
-              <Image
-                src="/images/flasks/pack-2-flasks.png"
-                alt=""
-                width={44}
-                height={44}
-                className="upsell-img"
-              />
-              <span className="upsell-body">
-                <span className="upsell-name">{addonProduct.name}</span>
-                <span className="upsell-meta">Compatible TrailFlow · Push-pull</span>
+              <span className="addon-row">
+                <span className="addon-frame">
+                  <Image
+                    src="/images/flasks/pack-2-flasks.png"
+                    alt=""
+                    width={80}
+                    height={80}
+                    className="addon-img"
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                </span>
+                <span className="addon-text">
+                  <span className="addon-title">{addonProduct.name}</span>
+                  <span className="addon-detail">
+                    Push-pull · Glisse dans les poches avant
+                  </span>
+                </span>
+                <span className="addon-aside">
+                  <span className="addon-price">+&nbsp;{addonProduct.price}&nbsp;€</span>
+                  <span className="addon-toggle" aria-hidden="true">
+                    <span className="addon-toggle-thumb" />
+                  </span>
+                </span>
               </span>
-              <span className="upsell-price">+{addonProduct.price}€</span>
             </label>
           )}
 
