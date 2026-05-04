@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   EmbeddedCheckout,
@@ -8,8 +8,16 @@ import {
 } from "@stripe/react-stripe-js";
 import { useCart } from "../lib/cart";
 import { api } from "../lib/api";
+import { parseCheckoutCreate } from "../lib/schemas";
 import { CartIcon } from "../components/CartDrawer";
 import { SiteFooter } from "../components/SiteFooter";
+
+/**
+ * Stripe EmbeddedCheckoutProvider rappelle `fetchClientSecret` à chaque échec
+ * et peut spammer le backend en boucle si tout est down. On capote à 3
+ * tentatives par mount pour ne pas geler l'onglet ni faire DDoS notre API.
+ */
+const MAX_FETCH_CLIENT_SECRET_ATTEMPTS = 3;
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PK || "pk_test_placeholder"
@@ -32,6 +40,14 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<"form" | "payment">("form");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Zustand persist se réhydrate côté client après le 1er render. Avant ça,
+  // `items` est vide [] → on affichait "Panier vide" pendant ~100-500 ms même
+  // si l'utilisateur avait des articles. On retarde le rendu du contenu jusqu'à
+  // ce que la persistance ait fini de charger pour éviter ce flash.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
   const [form, setForm] = useState<FormState>({
     customerName: "",
     customerEmail: "",
@@ -71,34 +87,54 @@ export default function CheckoutPage() {
     setStep("payment");
   };
 
+  // Compteur d'appels à fetchClientSecret pour ce mount — réinitialisé quand
+  // l'utilisateur clique "Modifier mes coordonnées" (cf. retour à l'étape "form").
+  const attemptsRef = useRef(0);
+
+  useEffect(() => {
+    if (step === "form") attemptsRef.current = 0;
+  }, [step]);
+
   // Charge le clientSecret Stripe
   const fetchClientSecret = useCallback(async (): Promise<string> => {
     setError(null);
     if (items.length === 0) throw new Error("Panier vide");
+
+    attemptsRef.current += 1;
+    if (attemptsRef.current > MAX_FETCH_CLIENT_SECRET_ATTEMPTS) {
+      const msg =
+        "Le service de paiement est temporairement indisponible. Réessaye dans quelques instants.";
+      setError(msg);
+      // On throw pour que Stripe arrête les retries — l'utilisateur voit le
+      // message d'erreur et peut revenir à l'étape précédente.
+      throw new Error(msg);
+    }
+
     const first = items[0];
     try {
-      const res = await api<{ sessionId: string; clientSecret: string }>(
-        "/payments/create-checkout",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            productId: first.productId,
-            quantity: first.quantity,
-            customerEmail: form.customerEmail,
-            customerName: form.customerName,
-            customerPhone: form.customerPhone,
-            shippingAddress: {
-              line1: form.addressLine1,
-              line2: form.addressLine2,
-              city: form.city,
-              postalCode: form.postalCode,
-              country: form.country,
-            },
-            sport: "trail",
-          }),
-        }
-      );
-      if (!res.clientSecret) throw new Error("clientSecret manquant");
+      const res = await api("/payments/create-checkout", {
+        method: "POST",
+        parse: parseCheckoutCreate,
+        body: JSON.stringify({
+          productId: first.productId,
+          quantity: first.quantity,
+          // Taille et coloris choisis — persistés sur l'order item, repris
+          // dans l'email de confirmation et la page admin pour le SAV.
+          size: first.size,
+          color: first.color,
+          customerEmail: form.customerEmail,
+          customerName: form.customerName,
+          customerPhone: form.customerPhone,
+          shippingAddress: {
+            line1: form.addressLine1,
+            line2: form.addressLine2,
+            city: form.city,
+            postalCode: form.postalCode,
+            country: form.country,
+          },
+          sport: "trail",
+        }),
+      });
       return res.clientSecret;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur de paiement";
@@ -131,7 +167,11 @@ export default function CheckoutPage() {
 
         <h1 className="legal-h1">Finaliser la commande</h1>
 
-        {items.length === 0 ? (
+        {!hydrated ? (
+          <div className="checkout-empty">
+            <p className="confirmation-loading">Chargement du panier…</p>
+          </div>
+        ) : items.length === 0 ? (
           <div className="checkout-empty">
             <p>Votre panier est vide.</p>
             <a href="/produit" className="btn-primary">Découvrir le produit</a>
@@ -286,14 +326,14 @@ export default function CheckoutPage() {
               <h3 className="checkout-summary-h">Votre commande</h3>
               <div className="checkout-items">
                 {items.map((it) => (
-                  <div key={`${it.slug}-${it.size}`} className="checkout-item">
+                  <div key={`${it.slug}-${it.size}-${it.color}`} className="checkout-item">
                     <div className="checkout-item-img">
                       <img src={it.image} alt={it.name} />
                     </div>
                     <div className="checkout-item-info">
                       <div className="checkout-item-name">{it.name}</div>
                       <div className="checkout-item-meta">
-                        Taille {it.size} · ×{it.quantity}
+                        Taille {it.size} · {it.color} · ×{it.quantity}
                       </div>
                     </div>
                     <div className="checkout-item-price">

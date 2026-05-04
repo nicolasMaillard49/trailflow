@@ -5,6 +5,7 @@ import { PaymentsService } from './payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { BundlesService } from '../bundles/bundles.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 const mockStripe = {
   checkout: {
@@ -26,9 +27,12 @@ describe('PaymentsService', () => {
   let service: PaymentsService;
   let prisma: {
     product: { findUniqueOrThrow: jest.Mock };
-    order: { create: jest.Mock; update: jest.Mock; findUnique: jest.Mock };
+    order: { create: jest.Mock; update: jest.Mock; updateMany: jest.Mock; findUnique: jest.Mock };
+    processedStripeEvent: { create: jest.Mock };
   };
   let bundlesService: { findById: jest.Mock };
+  let emailService: { sendOrderConfirmation: jest.Mock; sendShippingNotification: jest.Mock };
+  let trackingService: { generateMagicLink: jest.Mock };
 
   const customerFields = {
     customerName: 'Jean Dupont',
@@ -52,21 +56,28 @@ describe('PaymentsService', () => {
   beforeEach(async () => {
     prisma = {
       product: { findUniqueOrThrow: jest.fn() },
-      order: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn() },
+      order: {
+        create: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUnique: jest.fn(),
+      },
+      processedStripeEvent: { create: jest.fn().mockResolvedValue({}) },
     };
     bundlesService = { findById: jest.fn() };
+    emailService = {
+      sendOrderConfirmation: jest.fn(),
+      sendShippingNotification: jest.fn(),
+    };
+    trackingService = {
+      generateMagicLink: jest.fn().mockReturnValue('https://example.test/suivi?token=mock'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: prisma },
-        {
-          provide: EmailService,
-          useValue: {
-            sendOrderConfirmation: jest.fn(),
-            sendShippingNotification: jest.fn(),
-          },
-        },
+        { provide: EmailService, useValue: emailService },
         {
           provide: ConfigService,
           useValue: {
@@ -75,11 +86,16 @@ describe('PaymentsService', () => {
           },
         },
         { provide: BundlesService, useValue: bundlesService },
+        { provide: TrackingService, useValue: trackingService },
       ],
     }).compile();
 
     service = module.get(PaymentsService);
     jest.clearAllMocks();
+    // Re-set defaults après clearAllMocks
+    prisma.order.updateMany.mockResolvedValue({ count: 1 });
+    prisma.processedStripeEvent.create.mockResolvedValue({});
+    trackingService.generateMagicLink.mockReturnValue('https://example.test/suivi?token=mock');
   });
 
   describe('createCheckoutSession', () => {
@@ -218,30 +234,82 @@ describe('PaymentsService', () => {
   });
 
   describe('handleWebhook', () => {
-    it('should update order status on checkout.session.completed', async () => {
-      const session = { id: 'cs_test', payment_intent: 'pi_test' };
+    const sampleOrder = {
+      id: 'order-1',
+      orderNumber: 1,
+      customerName: 'Jean',
+      customerEmail: 'jean@test.com',
+      total: 29.99,
+      items: [{ product: { name: 'Mon Produit' }, quantity: 1, price: 29.99 }],
+      shippingAddress: { line1: '12 rue', city: 'Paris', postalCode: '75001' },
+    };
+
+    beforeEach(() => {
       mockStripe.webhooks.constructEvent.mockReturnValue({
+        id: 'evt_123',
         type: 'checkout.session.completed',
-        data: { object: session },
+        data: { object: { id: 'cs_test', payment_intent: 'pi_test' } },
       });
-      prisma.order.update.mockResolvedValue({
-        id: 'order-1',
-        orderNumber: 1,
-        customerName: 'Jean',
-        customerEmail: 'jean@test.com',
-        total: 29.99,
-        items: [{ product: { name: 'Mon Produit' }, quantity: 1, price: 29.99 }],
-        shippingAddress: { line1: '12 rue', city: 'Paris', postalCode: '75001' },
+    });
+
+    it('should mark order PAID and trigger email on first delivery', async () => {
+      prisma.order.updateMany.mockResolvedValue({ count: 1 });
+      prisma.order.findUnique.mockResolvedValue(sampleOrder);
+
+      const result = await service.handleWebhook(Buffer.from(''), 'sig');
+
+      expect(prisma.processedStripeEvent.create).toHaveBeenCalledWith({
+        data: { eventId: 'evt_123', type: 'checkout.session.completed' },
+      });
+      expect(prisma.order.updateMany).toHaveBeenCalledWith({
+        where: { stripeSessionId: 'cs_test', status: 'PENDING' },
+        data: { status: 'PAID', stripePaymentId: 'pi_test' },
+      });
+      expect(emailService.sendOrderConfirmation).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ received: true });
+    });
+
+    it('should be idempotent: a duplicate eventId is ignored without re-sending email', async () => {
+      // Simule la collision unique sur ProcessedStripeEvent
+      prisma.processedStripeEvent.create.mockRejectedValueOnce({ code: 'P2002' });
+
+      const result = await service.handleWebhook(Buffer.from(''), 'sig');
+
+      expect(result).toEqual({ received: true, duplicate: true });
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+      expect(emailService.sendOrderConfirmation).not.toHaveBeenCalled();
+    });
+
+    it('should not re-send email if order is already PAID (race after first delivery)', async () => {
+      // L'event est nouveau (pas en table), mais un autre worker vient de marquer la commande PAID
+      prisma.order.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await service.handleWebhook(Buffer.from(''), 'sig');
+
+      expect(result).toEqual({ received: true, alreadyProcessed: true });
+      expect(emailService.sendOrderConfirmation).not.toHaveBeenCalled();
+      expect(prisma.order.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should propagate non-P2002 prisma errors when recording the event', async () => {
+      prisma.processedStripeEvent.create.mockRejectedValueOnce(new Error('DB down'));
+
+      await expect(service.handleWebhook(Buffer.from(''), 'sig')).rejects.toThrow('DB down');
+      expect(emailService.sendOrderConfirmation).not.toHaveBeenCalled();
+    });
+
+    it('should ignore non-checkout events (eg payment_intent.succeeded)', async () => {
+      mockStripe.webhooks.constructEvent.mockReturnValue({
+        id: 'evt_other',
+        type: 'payment_intent.succeeded',
+        data: { object: {} },
       });
 
       const result = await service.handleWebhook(Buffer.from(''), 'sig');
 
-      expect(prisma.order.update).toHaveBeenCalledWith({
-        where: { stripeSessionId: 'cs_test' },
-        data: { status: 'PAID', stripePaymentId: 'pi_test' },
-        include: { items: { include: { product: true } } },
-      });
       expect(result).toEqual({ received: true });
+      expect(prisma.order.updateMany).not.toHaveBeenCalled();
+      expect(emailService.sendOrderConfirmation).not.toHaveBeenCalled();
     });
   });
 

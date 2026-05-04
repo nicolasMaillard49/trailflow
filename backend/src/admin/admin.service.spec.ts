@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { TrackingService } from '../tracking/tracking.service';
 
 describe('AdminService', () => {
   let service: AdminService;
@@ -10,6 +11,7 @@ describe('AdminService', () => {
       count: jest.Mock;
       aggregate: jest.Mock;
       findMany: jest.Mock;
+      findUnique: jest.Mock;
       update: jest.Mock;
       delete: jest.Mock;
     };
@@ -23,6 +25,7 @@ describe('AdminService', () => {
         count: jest.fn(),
         aggregate: jest.fn(),
         findMany: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue(null),
         update: jest.fn(),
         delete: jest.fn(),
       },
@@ -39,6 +42,14 @@ describe('AdminService', () => {
           useValue: {
             sendOrderConfirmation: jest.fn(),
             sendShippingNotification: jest.fn(),
+          },
+        },
+        {
+          provide: TrackingService,
+          useValue: {
+            generateMagicLink: jest.fn().mockReturnValue('https://example.test/suivi?token=mock'),
+            lookupByToken: jest.fn(),
+            lookup: jest.fn(),
           },
         },
       ],
@@ -64,7 +75,7 @@ describe('AdminService', () => {
         totalOrders: 50,
         paidOrders: 30,
         totalRevenue: 1500.5,
-        recentOrders: [{ id: 'order-1' }],
+        recentOrders: [{ id: 'order-1', orderRef: expect.stringMatching(/^TF-/) }],
         monthly: {
           revenue: 29.99,
           orderCount: 1,
@@ -100,18 +111,19 @@ describe('AdminService', () => {
       expect(prisma.order.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 20, take: 20 }),
       );
-      expect(result).toEqual({
-        orders,
-        total: 50,
-        page: 2,
-        totalPages: 3,
-      });
+      expect(result.total).toBe(50);
+      expect(result.page).toBe(2);
+      expect(result.totalPages).toBe(3);
+      expect(result.orders).toHaveLength(2);
+      expect(result.orders[0]).toEqual(expect.objectContaining({ id: 'order-1', orderRef: expect.stringMatching(/^TF-/) }));
+      expect(result.orders[1]).toEqual(expect.objectContaining({ id: 'order-2', orderRef: expect.stringMatching(/^TF-/) }));
     });
   });
 
   describe('updateOrderStatus', () => {
-    it('should update order status', async () => {
-      const updated = { id: 'order-1', status: 'SHIPPED' };
+    it('should update order status without re-emailing if already SHIPPED', async () => {
+      const updated = { id: 'order-1', status: 'SHIPPED', customerEmail: 'test@test.com', orderNumber: 1, customerName: 'Test', trackingNumber: null, trackingUrl: null };
+      prisma.order.findUnique.mockResolvedValue({ status: 'SHIPPED' });
       prisma.order.update.mockResolvedValue(updated);
 
       const result = await service.updateOrderStatus('order-1', 'SHIPPED');
@@ -122,6 +134,17 @@ describe('AdminService', () => {
       });
       expect(result).toEqual(updated);
     });
+
+    it('should send shipping email on transition to SHIPPED', async () => {
+      const updated = { id: 'order-1', status: 'SHIPPED', customerEmail: 'test@test.com', orderNumber: 1, customerName: 'Test', trackingNumber: 'LP123', trackingUrl: null };
+      prisma.order.findUnique.mockResolvedValue({ status: 'PROCESSING' });
+      prisma.order.update.mockResolvedValue(updated);
+      const emailSpy = (service as any).emailService.sendShippingNotification as jest.Mock;
+
+      await service.updateOrderStatus('order-1', 'SHIPPED');
+
+      expect(emailSpy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('updateOrderTracking', () => {
@@ -130,6 +153,7 @@ describe('AdminService', () => {
         id: 'order-1', orderNumber: 1, customerName: 'Test', customerEmail: 'test@test.com',
         trackingNumber: 'LP123CN', trackingUrl: 'https://track.example.com/LP123CN',
       };
+      prisma.order.findUnique.mockResolvedValue({ trackingNumber: null, status: 'PAID' });
       prisma.order.update.mockResolvedValue(updated);
 
       const result = await service.updateOrderTracking('order-1', {
@@ -148,6 +172,7 @@ describe('AdminService', () => {
     });
 
     it('should update only tracking number when URL is omitted', async () => {
+      prisma.order.findUnique.mockResolvedValue({ trackingNumber: null, status: 'PAID' });
       prisma.order.update.mockResolvedValue({
         id: 'order-1', orderNumber: 1, customerName: 'Test', customerEmail: 'test@test.com',
         trackingNumber: 'LP456CN',
@@ -162,6 +187,20 @@ describe('AdminService', () => {
           trackingUrl: undefined,
         },
       });
+    });
+
+    it('should not double-send shipping email when tracking is re-submitted', async () => {
+      // before.trackingNumber existe déjà → pas d'email envoyé
+      prisma.order.findUnique.mockResolvedValue({ trackingNumber: 'LP000', status: 'PAID' });
+      prisma.order.update.mockResolvedValue({
+        id: 'order-1', orderNumber: 1, customerName: 'Test', customerEmail: 'test@test.com',
+        trackingNumber: 'LP123CN',
+      });
+      const emailSpy = (service as any).emailService.sendShippingNotification as jest.Mock;
+
+      await service.updateOrderTracking('order-1', { trackingNumber: 'LP123CN' });
+
+      expect(emailSpy).not.toHaveBeenCalled();
     });
   });
 

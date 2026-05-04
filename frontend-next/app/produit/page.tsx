@@ -1,23 +1,90 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useCart } from "../lib/cart";
 import { api } from "../lib/api";
+import { parseProduct, type Product } from "../lib/schemas";
 import { CartIcon } from "../components/CartDrawer";
 import { trackEvent } from "../components/Trackers";
 import { SiteFooter } from "../components/SiteFooter";
 import { showToast } from "../components/Toast";
 
-const IMAGES = [
-  { src: "/images/product-face.png", alt: "Face" },
-  { src: "/images/product-face-sol.png", alt: "Face flasque" },
-  { src: "/images/product-3quart.png", alt: "3/4 avant" },
-  { src: "/images/product-dos.png", alt: "Dos" },
-  { src: "/images/product-cote-droit.png", alt: "Côté droit" },
-  { src: "/images/product-cote-gauche.png", alt: "Côté gauche" },
-  { src: "/images/product-details.png", alt: "Détails" },
-  { src: "/images/running-wom.png", alt: "Porté en course urbaine" },
-  { src: "/images/running-woman.png", alt: "Porté en trail" },
+type ImageEntry = { src: string; alt: string };
+
+type ColorVariant = {
+  name: string;
+  hex: string;
+  /** Image utilisée comme miniature de panier quand l'utilisateur ajoute. */
+  cartImage: string;
+  /** Galerie principale (carrousel + thumbnails). */
+  gallery: ImageEntry[];
+  /** Cards "Tu pourrais aussi aimer" — femme + homme. */
+  related: { woman: string; man: string };
+};
+
+// Mémo : pour ajouter une nouvelle couleur, copier les images dans
+// /public/images/<color>/ et ajouter une entrée ci-dessous. Tout le reste de
+// la page (carrousel, thumbnails, related cards, cart image) est piloté par
+// la couleur sélectionnée — aucun autre code à toucher.
+const COLOR_VARIANTS: ColorVariant[] = [
+  {
+    name: "Gris perle",
+    hex: "#C4C2BE",
+    cartImage: "/images/product-face.png",
+    gallery: [
+      { src: "/images/product-face.png", alt: "Face" },
+      { src: "/images/wom-man-grey-stud.png", alt: "Porté homme + femme" },
+      { src: "/images/product-face-sol.png", alt: "Face flasque" },
+      { src: "/images/product-3quart.png", alt: "3/4 avant" },
+      { src: "/images/product-dos.png", alt: "Dos" },
+      { src: "/images/product-cote-droit.png", alt: "Côté droit" },
+      { src: "/images/product-cote-gauche.png", alt: "Côté gauche" },
+      { src: "/images/product-details.png", alt: "Détails" },
+      { src: "/images/running-wom.png", alt: "Porté en course urbaine" },
+      { src: "/images/running-woman.png", alt: "Porté en trail" },
+    ],
+    related: {
+      woman: "/images/wom-studio.png",
+      man: "/images/man-studio.png",
+    },
+  },
+  {
+    name: "Noir nuit",
+    hex: "#1C1C1A",
+    cartImage: "/images/black/black-cote.png",
+    gallery: [
+      { src: "/images/black/p-black-face.png", alt: "Face" },
+      { src: "/images/black/wom-and-man-black.png", alt: "Porté homme + femme" },
+      { src: "/images/black/p-black-face-sol.png", alt: "Face flasque" },
+      { src: "/images/black/p-black-3-4.png", alt: "3/4 avant" },
+      { src: "/images/black/black-cote.png", alt: "Côté" },
+      { src: "/images/black/p-black-cote.png", alt: "Côté détouré" },
+      { src: "/images/black/p-black-details.png", alt: "Détails techniques" },
+      { src: "/images/black/p-planche-black-haut.png", alt: "Planche détails — haut" },
+      { src: "/images/black/p-planche-black-bas.png", alt: "Planche détails — bas" },
+    ],
+    related: {
+      woman: "/images/black/wom-black-stud.png",
+      man: "/images/black/man-black-stud.png",
+    },
+  },
+  {
+    name: "Bleu pastel",
+    hex: "#A7B9D1",
+    cartImage: "/images/blue/p-blue-cote.png",
+    gallery: [
+      { src: "/images/blue/p-blue-face.png", alt: "Face" },
+      { src: "/images/blue/wom-man-blue-stud-3-4.png", alt: "Porté homme + femme — 3/4" },
+      { src: "/images/blue/p-blue-cote.png", alt: "Côté détouré" },
+      { src: "/images/blue/p-blue-face-sol.png", alt: "Face flasque" },
+      { src: "/images/blue/p-blue-dos.png", alt: "Dos" },
+    ],
+    related: {
+      woman: "/images/blue/wom-stud-blue.png",
+      man: "/images/blue/man-stud-blue.png",
+    },
+  },
 ];
 
 const SIZES: { label: string; soldout?: boolean }[] = [
@@ -28,28 +95,12 @@ const SIZES: { label: string; soldout?: boolean }[] = [
   { label: "XXL", soldout: true },
 ];
 
-const COLORS = [
-  { name: "Gris perle", hex: "#C4C2BE" },
-  { name: "Noir nuit", hex: "#1C1C1A" },
-  { name: "Bleu marine", hex: "#2A4A6B" },
-];
-
 type Tab = "desc" | "specs" | "reviews" | "sizes";
-
-type Product = {
-  id: string;
-  slug: string;
-  name: string;
-  description: string;
-  price: number;
-  comparePrice: number | null;
-  images: string[];
-};
 
 export default function ProduitPage() {
   const [active, setActive] = useState(0);
   const [size, setSize] = useState<string | null>(null);
-  const [color, setColor] = useState(COLORS[0].name);
+  const [color, setColor] = useState(COLOR_VARIANTS[0].name);
   const [qty, setQty] = useState(1);
   const [wishlist, setWishlist] = useState(false);
   const [tab, setTab] = useState<Tab>("desc");
@@ -57,8 +108,29 @@ export default function ProduitPage() {
   const [isPaused, setIsPaused] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
   const [loadError, setLoadError] = useState(false);
+  // Fade-out bref pendant le swap de couleur (carrousel + thumbnails).
+  const [colorSwapping, setColorSwapping] = useState(false);
+
+  const variant = COLOR_VARIANTS.find((c) => c.name === color) ?? COLOR_VARIANTS[0];
+  const IMAGES = variant.gallery;
 
   const addItem = useCart((s) => s.add);
+
+  // Quand la couleur change, on remet le carrousel sur la première image et
+  // on déclenche un fade rapide pour signaler le swap. Sans ça, on resterait
+  // sur l'index courant qui peut être hors des nouvelles images.
+  const handleColorChange = (next: string) => {
+    if (next === color) return;
+    setColorSwapping(true);
+    // Le fade-out dure ~180 ms ; on swappe à la moitié pour que l'utilisateur
+    // ne voie jamais de flash entre deux variantes.
+    window.setTimeout(() => {
+      setColor(next);
+      setActive(0);
+      // Petit délai supplémentaire pour laisser le rendu stabiliser avant fade-in.
+      window.setTimeout(() => setColorSwapping(false), 60);
+    }, 120);
+  };
 
   // Nav scroll listener
   useEffect(() => {
@@ -92,7 +164,7 @@ export default function ProduitPage() {
     let cancelled = false;
     let attempt = 0;
     const tryFetch = () => {
-      api<Product>("/products/gilet-trailflow")
+      api("/products/gilet-trailflow", { parse: parseProduct })
         .then((p) => {
           if (cancelled) return;
           setProduct(p);
@@ -135,18 +207,20 @@ export default function ProduitPage() {
       slug: product.slug,
       name: product.name,
       size,
+      color,
       price: product.price,
       quantity: qty,
-      image: IMAGES[0].src,
+      image: variant.cartImage,
     });
     setAdded(true);
-    showToast(`${product.name} (taille ${size}) ajouté au panier`);
+    showToast(`${product.name} (${color}, taille ${size}) ajouté au panier`);
     trackEvent("AddToCart", {
       content_name: product.name,
       content_ids: product.id,
       value: product.price * qty,
       currency: "EUR",
       size,
+      color,
     });
     setTimeout(() => setAdded(false), 2000);
   };
@@ -194,17 +268,22 @@ export default function ProduitPage() {
       {/* PRODUCT */}
       <div className="product">
         {/* GALLERY */}
-        <div className="gallery-side">
+        <div className={`gallery-side${colorSwapping ? " color-swapping" : ""}`}>
           <div
             className="main-img-wrap"
             onMouseEnter={() => setIsPaused(true)}
             onMouseLeave={() => setIsPaused(false)}
           >
-            <img
+            <Image
               key={IMAGES[active].src}
               src={IMAGES[active].src}
-              alt={`Gilet TrailFlow — ${IMAGES[active].alt}`}
+              alt={`Gilet TrailFlow ${color} — ${IMAGES[active].alt}`}
               className="main-img"
+              width={1200}
+              height={1200}
+              // L'image principale est above-the-fold → priority pour LCP
+              priority
+              sizes="(max-width: 900px) 100vw, 50vw"
             />
           </div>
           <div className="thumbnails">
@@ -216,7 +295,7 @@ export default function ProduitPage() {
                 onClick={() => setActive(i)}
                 aria-label={`Voir ${img.alt}`}
               >
-                <img src={img.src} alt={img.alt} />
+                <Image src={img.src} alt={img.alt} width={120} height={120} />
               </button>
             ))}
           </div>
@@ -278,7 +357,7 @@ export default function ProduitPage() {
               Coloris <span>{color}</span>
             </div>
             <div className="color-grid">
-              {COLORS.map((c) => (
+              {COLOR_VARIANTS.map((c) => (
                 <button
                   key={c.name}
                   type="button"
@@ -291,8 +370,9 @@ export default function ProduitPage() {
                         : undefined,
                   }}
                   title={c.name}
-                  onClick={() => setColor(c.name)}
+                  onClick={() => handleColorChange(c.name)}
                   aria-label={c.name}
+                  aria-pressed={c.name === color}
                 />
               ))}
             </div>
@@ -593,32 +673,50 @@ export default function ProduitPage() {
           </h2>
         </div>
         <div className="related-grid">
-          <a href="#" className="related-card">
-            <div className="related-img">
-              <img src="/images/wom-studio.png" alt="Femme TrailFlow" />
-            </div>
-            <div className="related-info">
-              <div className="related-label">Running féminin</div>
-              <div className="related-name">TrailFlow — Elle</div>
-              <div className="related-price">
-                <span className="was">49,90€</span>
-                <span className="now">34,90€</span>
-              </div>
-            </div>
-          </a>
-          <a href="#" className="related-card">
-            <div className="related-img">
-              <img src="/images/man-studio.png" alt="Homme TrailFlow" />
-            </div>
-            <div className="related-info">
-              <div className="related-label">Running masculin</div>
-              <div className="related-name">TrailFlow — Lui</div>
-              <div className="related-price">
-                <span className="was">49,90€</span>
-                <span className="now">34,90€</span>
-              </div>
-            </div>
-          </a>
+          {/* On affiche les *autres* coloris en cross-sell. Cliquer sur une
+              card switche la page sur cette couleur (même carrousel + scroll
+              vers le sélecteur), donc l'utilisateur découvre la variante sans
+              perdre son contexte. On alterne mannequin femme/homme pour
+              casser la monotonie visuelle. */}
+          {COLOR_VARIANTS.filter((c) => c.name !== color).map((c, i) => {
+            const useWoman = i % 2 === 0;
+            const img = useWoman ? c.related.woman : c.related.man;
+            const label = useWoman ? "Running féminin" : "Running masculin";
+            return (
+              <button
+                key={c.name}
+                type="button"
+                className={`related-card${colorSwapping ? " color-swapping" : ""}`}
+                onClick={() => {
+                  handleColorChange(c.name);
+                  // Scroll vers le haut produit pour montrer le swap d'images.
+                  if (typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+                aria-label={`Voir le coloris ${c.name}`}
+              >
+                <div className="related-img">
+                  <Image
+                    key={img}
+                    src={img}
+                    alt={`TrailFlow ${c.name}`}
+                    width={600}
+                    height={600}
+                    sizes="(max-width: 900px) 100vw, 33vw"
+                  />
+                </div>
+                <div className="related-info">
+                  <div className="related-label">{label}</div>
+                  <div className="related-name">TrailFlow — {c.name}</div>
+                  <div className="related-price">
+                    <span className="was">49,90€</span>
+                    <span className="now">34,90€</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
 

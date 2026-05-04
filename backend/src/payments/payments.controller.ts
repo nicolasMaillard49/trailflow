@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Headers, Req, Get, Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { SessionIdDto } from './dto/session-id.dto';
@@ -28,6 +29,9 @@ export class PaymentsController {
     return this.paymentsService.cancelOrder(dto.session_id);
   }
 
+  // Évite l'énumération de sessions Stripe (un acheteur légitime ne consulte le
+  // statut que quelques fois sur sa page de confirmation).
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Get('session-status')
   getSessionStatus(@Query() dto: SessionIdDto) {
     return this.paymentsService.getSessionStatus(dto.session_id);

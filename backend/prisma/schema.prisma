@@ -59,7 +59,12 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   quantity  Int
   price     Float
-  variant    String?
+  // Taille / coloris choisis par l'acheteur. Indispensables côté SAV et pour
+  // remplir la commande fournisseur (champs distincts plutôt que `variant`
+  // unique pour pouvoir filtrer / agréger par couleur dans l'admin).
+  size      String?
+  color     String?
+  variant   String?
   bundleSlug String?
 
   @@index([orderId])
@@ -90,6 +95,7 @@ model BundleItem {
   quantity  Int     @default(1)
 
   @@index([bundleId])
+  @@index([productId])
 }
 
 enum OrderStatus {
@@ -106,4 +112,30 @@ model Admin {
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+}
+
+// Idempotence des webhooks Stripe : on enregistre l'eventId dès qu'il a été
+// traité avec succès. Stripe peut renvoyer le même event plusieurs fois
+// (timeout, retry), il faut absolument éviter d'envoyer 2× l'email de confirmation.
+model ProcessedStripeEvent {
+  eventId     String   @id
+  type        String
+  processedAt DateTime @default(now())
+}
+
+// Dead-letter pour les emails critiques qu'on n'a pas réussi à envoyer après
+// plusieurs tentatives. À traiter manuellement (ou cron de retry plus tard).
+model FailedEmail {
+  id        String   @id @default(uuid())
+  to        String
+  subject   String
+  payload   Json
+  template  String
+  attempts  Int      @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([template])
+  @@index([createdAt])
 }

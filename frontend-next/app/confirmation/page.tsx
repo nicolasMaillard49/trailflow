@@ -3,29 +3,10 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "../lib/api";
+import { parseSessionStatus, type SessionStatus } from "../lib/schemas";
 import { useCart } from "../lib/cart";
 import { trackEvent } from "../components/Trackers";
 import { SiteFooter } from "../components/SiteFooter";
-
-type SessionStatus = {
-  session: {
-    id: string;
-    status?: string;
-    payment_status?: string;
-    customer_details?: { email?: string };
-    amount_total?: number;
-  };
-  order: {
-    orderRef: string;
-    orderNumber: number;
-    customerEmail: string;
-    customerName: string;
-    total: number;
-    status: string;
-    trackingMagicLink: string;
-    items: { name: string; quantity: number; price: number }[];
-  } | null;
-};
 
 function ConfirmationInner() {
   const params = useSearchParams();
@@ -36,8 +17,12 @@ function ConfirmationInner() {
 
   useEffect(() => {
     if (!sessionId) return;
-    api<SessionStatus>(`/payments/session-status?session_id=${sessionId}`)
+    let cancelled = false;
+    api(`/payments/session-status?session_id=${encodeURIComponent(sessionId)}`, {
+      parse: parseSessionStatus,
+    })
       .then((r) => {
+        if (cancelled) return;
         setData(r);
         if (r.order) {
           trackEvent("Purchase", {
@@ -48,7 +33,13 @@ function ConfirmationInner() {
           clear();
         }
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Erreur inconnue");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, clear]);
 
   return (

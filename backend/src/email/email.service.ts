@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import * as nodemailer from 'nodemailer';
+import { PrismaService } from '../prisma/prisma.service';
 import { orderConfirmationTemplate } from './templates/order-confirmation';
 import { shippingNotificationTemplate } from './templates/shipping-notification';
 import { storeConfig, formatOrderNumber } from '../config/store.config';
@@ -11,7 +12,13 @@ export interface OrderEmailData {
   customerName: string;
   customerEmail: string;
   total: number;
-  items: { name: string; quantity: number; price: number }[];
+  items: {
+    name: string;
+    quantity: number;
+    price: number;
+    size?: string;
+    color?: string;
+  }[];
   shippingAddress: {
     line1: string;
     line2?: string;
@@ -35,6 +42,12 @@ export interface ShippingEmailData {
 
 type SendOpts = { from: string; to: string; subject: string; html: string };
 
+/**
+ * Retries pour les emails critiques (confirmation commande, notif d'expédition).
+ * Backoff exponentiel : 500 ms, 2 s, 8 s. Au-delà, on bascule en dead-letter.
+ */
+const CRITICAL_RETRY_DELAYS_MS = [500, 2_000, 8_000];
+
 @Injectable()
 export class EmailService {
   private resend: Resend;
@@ -43,7 +56,10 @@ export class EmailService {
   private useSmtp: boolean;
   private readonly logger = new Logger(EmailService.name);
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+  ) {
     const transport = (this.configService.get('EMAIL_TRANSPORT') || 'resend').toLowerCase();
     this.useSmtp = transport === 'smtp';
 
@@ -70,26 +86,77 @@ export class EmailService {
       return { id: info.messageId };
     }
     const result = await this.resend.emails.send(opts);
+    if ((result as any).error) {
+      throw new Error((result as any).error.message || 'Resend error');
+    }
     return { id: result.data?.id || 'unknown' };
+  }
+
+  /**
+   * Envoie un email "critique" avec retry exponentiel ; en cas d'échec final,
+   * on enregistre une ligne dans `FailedEmail` (dead-letter) pour pouvoir
+   * rattraper manuellement plutôt que de perdre silencieusement la confirmation.
+   */
+  private async sendCritical(
+    opts: SendOpts,
+    template: string,
+    payload: Record<string, unknown>,
+  ): Promise<{ id: string } | null> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= CRITICAL_RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        const result = await this.send(opts);
+        if (attempt > 0) {
+          this.logger.log(`Email "${template}" envoyé après ${attempt} retry(ies) (${result.id})`);
+        }
+        return result;
+      } catch (err) {
+        lastError = err;
+        const delay = CRITICAL_RETRY_DELAYS_MS[attempt];
+        if (delay === undefined) break;
+        this.logger.warn(
+          `Email "${template}" échec tentative ${attempt + 1} → retry dans ${delay}ms : ${(err as Error).message}`,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+    // Toutes les tentatives ont échoué — dead-letter
+    const errMessage = lastError instanceof Error ? lastError.message : String(lastError);
+    this.logger.error(`Email "${template}" en dead-letter pour ${opts.to}: ${errMessage}`);
+    try {
+      await this.prisma.failedEmail.create({
+        data: {
+          to: opts.to,
+          subject: opts.subject,
+          template,
+          payload: payload as any,
+          attempts: CRITICAL_RETRY_DELAYS_MS.length + 1,
+          lastError: errMessage,
+        },
+      });
+    } catch (dbErr) {
+      // Si la dead-letter elle-même tombe en panne, on n'a plus qu'à logger.
+      this.logger.error(`Impossible d'écrire en dead-letter pour ${opts.to}`, dbErr);
+    }
+    return null;
   }
 
   async sendOrderConfirmation(data: OrderEmailData) {
     const orderNum = formatOrderNumber(data.orderNumber);
     const storeInfo = { storeName: storeConfig.storeName, storeUrl: storeConfig.storeUrl, orderNum };
 
-    // 1. Email client
-    try {
-      this.logger.log(`Sending order confirmation from="${this.from}" to="${data.customerEmail}"`);
-      const result = await this.send({
+    // 1. Email client — critique : retry + dead-letter
+    this.logger.log(`Sending order confirmation from="${this.from}" to="${data.customerEmail}"`);
+    await this.sendCritical(
+      {
         from: this.from,
         to: data.customerEmail,
         subject: `Commande confirmee #${orderNum}`,
         html: orderConfirmationTemplate(data, storeInfo),
-      });
-      this.logger.log(`Order confirmation sent to ${data.customerEmail} (${result.id})`);
-    } catch (error) {
-      this.logger.error(`Failed to send order confirmation to ${data.customerEmail}`, error);
-    }
+      },
+      'order-confirmation',
+      { orderNumber: data.orderNumber, customerEmail: data.customerEmail },
+    );
 
     // 2. Email admin notification — DA TrailFlow
     const adminEmail = this.configService.get('ADMIN_EMAIL');
@@ -195,17 +262,15 @@ export class EmailService {
     const orderNum = formatOrderNumber(data.orderNumber);
     const storeInfo = { storeName: storeConfig.storeName, storeUrl: storeConfig.storeUrl, orderNum };
 
-    try {
-      const result = await this.send({
+    return this.sendCritical(
+      {
         from: this.from,
         to: data.customerEmail,
         subject: `Votre commande #${orderNum} a ete expediee !`,
         html: shippingNotificationTemplate(data, storeInfo),
-      });
-      this.logger.log(`Shipping notification sent to ${data.customerEmail} (${result.id})`);
-      return result;
-    } catch (error) {
-      this.logger.error(`Failed to send shipping notification to ${data.customerEmail}`, error);
-    }
+      },
+      'shipping-notification',
+      { orderNumber: data.orderNumber, customerEmail: data.customerEmail },
+    );
   }
 }

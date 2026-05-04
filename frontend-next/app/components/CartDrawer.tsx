@@ -56,19 +56,19 @@ export function CartDrawer() {
           <>
             <div className="cart-list">
               {items.map((item) => (
-                <div key={`${item.slug}-${item.size}`} className="cart-item">
+                <div key={`${item.slug}-${item.size}-${item.color}`} className="cart-item">
                   <div className="cart-img">
                     <img src={item.image} alt={item.name} />
                   </div>
                   <div className="cart-info">
                     <div className="cart-name">{item.name}</div>
                     <div className="cart-meta">
-                      Taille {item.size}
+                      Taille {item.size} · {item.color}
                     </div>
                     <div className="cart-qty">
-                      <button onClick={() => setQuantity(item.slug, item.size, item.quantity - 1)} aria-label="Diminuer">−</button>
+                      <button onClick={() => setQuantity(item.slug, item.size, item.color, item.quantity - 1)} aria-label="Diminuer">−</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => setQuantity(item.slug, item.size, item.quantity + 1)} aria-label="Augmenter">+</button>
+                      <button onClick={() => setQuantity(item.slug, item.size, item.color, item.quantity + 1)} aria-label="Augmenter">+</button>
                     </div>
                   </div>
                   <div className="cart-side">
@@ -76,7 +76,7 @@ export function CartDrawer() {
                       {(item.price * item.quantity).toFixed(2).replace(".", ",")}€
                     </div>
                     <button
-                      onClick={() => remove(item.slug, item.size)}
+                      onClick={() => remove(item.slug, item.size, item.color)}
                       className="cart-remove"
                       aria-label="Retirer"
                     >

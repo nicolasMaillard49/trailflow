@@ -40,6 +40,17 @@ export class CreateCheckoutDto {
   @IsString()
   sport?: string;
 
+  /** Taille choisie (S, M, L, XL…). Stockée sur l'order item, utile au SAV
+   * et à la prépa du colis fournisseur. */
+  @IsOptional()
+  @IsString()
+  size?: string;
+
+  /** Coloris choisi ("Gris perle", "Noir nuit", "Bleu pastel"). Idem. */
+  @IsOptional()
+  @IsString()
+  color?: string;
+
   @IsString()
   @IsNotEmpty()
   customerName: string;

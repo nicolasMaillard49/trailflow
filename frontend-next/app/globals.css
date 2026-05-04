@@ -570,7 +570,22 @@ footer {
   .reviews { grid-template-columns: 1fr; }
   .stats { grid-template-columns: 1fr 1fr; }
   .split-grid { grid-template-columns: 1fr; }
-  footer { padding: 32px 24px; flex-direction: column; }
+  footer {
+    padding: 32px 24px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 24px;
+  }
+  footer .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px 24px;
+  }
+  footer .footer-credit,
+  footer .footer-copy {
+    width: 100%;
+  }
 }
 
 /* =============================================
@@ -596,6 +611,20 @@ footer {
 }
 
 .gallery-side { position: relative; padding-right: 56px; min-width: 0; }
+
+/* Fade fluide quand l'utilisateur change de couleur (carrousel + thumbnails
+   + related cards). On joue uniquement sur l'opacité ; le swap de src se
+   fait pendant que le wrapper est invisible pour éviter tout flash. */
+.gallery-side .main-img-wrap img,
+.gallery-side .thumb img,
+.related-card.color-swapping .related-img img {
+  transition: opacity 0.18s ease, transform 0.6s ease;
+}
+.gallery-side.color-swapping .main-img-wrap img,
+.gallery-side.color-swapping .thumb img,
+.related-card.color-swapping .related-img img {
+  opacity: 0;
+}
 .info-side { min-width: 0; }
 .main-img-wrap {
   position: sticky; top: 100px;
@@ -927,6 +956,14 @@ footer {
   border: 0.5px solid rgba(240,237,232,0.06); cursor: pointer;
   transition: border-color 0.2s;
   text-decoration: none; color: inherit; display: block;
+  /* Reset des styles default `<button>` (UA stylesheet) — la card est
+     maintenant un bouton pour permettre `onClick` qui change le coloris,
+     mais visuellement elle doit rester identique à l'ancienne `<a>`. */
+  font: inherit; text-align: inherit; padding: 0; width: 100%;
+}
+.related-card:focus-visible {
+  outline: 0.5px solid var(--cream);
+  outline-offset: 2px;
 }
 .related-card:hover { border-color: rgba(240,237,232,0.15); }
 .related-img { aspect-ratio: 4/3; overflow: hidden; background: #1A1A18; }
@@ -968,8 +1005,31 @@ footer {
 @media (max-width: 900px) {
   .breadcrumb { padding: 88px 24px 0; flex-wrap: wrap; }
   .product { grid-template-columns: 1fr; padding: 24px 24px 0; gap: 40px; }
-  .gallery-side { padding-right: 0; }
-  .main-img-wrap { position: static; max-height: none; width: 100%; }
+  .gallery-side {
+    padding-right: 0;
+    /* Permet au carrousel de déborder sur les marges latérales du parent
+       (.product a 24px de padding) → image en pleine largeur écran, sans
+       marge gauche/droite ni bordure visible. */
+    margin: 0 -24px;
+  }
+  .main-img-wrap {
+    position: static;
+    max-height: none;
+    width: 100%;
+    /* Toutes les photos produit sont en 3:4, on impose le ratio pour éviter
+       que les visuels d'une variante un peu différente cassent le layout. */
+    aspect-ratio: 3 / 4;
+    border-radius: 0;
+    border: 0;
+  }
+  .main-img {
+    /* Plein cadre — on remplit le container 3:4 sans bandes blanches. */
+    object-fit: cover;
+    border-radius: 0;
+    border: 0;
+  }
+  /* Les thumbnails restent dans la colonne lisible — on annule le débordement. */
+  .gallery-side .thumbnails { margin: 8px 24px 0; }
   .info-side { padding: 0 0 80px; border-left: none; }
   .section { padding: 72px 24px; }
   .section-header { margin-bottom: 40px; }
