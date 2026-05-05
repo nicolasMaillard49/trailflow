@@ -61,8 +61,6 @@ const COLOR_VARIANTS: ColorVariant[] = [
       { src: "/images/black/black-cote.png", alt: "Côté" },
       { src: "/images/black/p-black-cote.png", alt: "Côté détouré" },
       { src: "/images/black/p-black-details.png", alt: "Détails techniques" },
-      { src: "/images/black/p-planche-black-haut.png", alt: "Planche détails — haut" },
-      { src: "/images/black/p-planche-black-bas.png", alt: "Planche détails — bas" },
     ],
     related: {
       woman: "/images/black/wom-black-stud.png",
