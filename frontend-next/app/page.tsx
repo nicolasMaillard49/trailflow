@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { FloatingCTA } from "./components/FloatingCTA";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
+import { formatDeliveryRange } from "./lib/deliveryDate";
 
 export default function HomePage() {
   // Petit script du proto : ajoute la classe .scrolled à <nav> au scroll
@@ -75,7 +76,7 @@ export default function HomePage() {
           </a>
           <div className="hero-trust">
             <div className="ht-item"><div className="ht-dot" />Paiement sécurisé</div>
-            <div className="ht-item"><div className="ht-dot" />Livraison 7–13 mai</div>
+            <div className="ht-item" suppressHydrationWarning><div className="ht-dot" />Livraison {formatDeliveryRange()}</div>
             <div className="ht-item"><div className="ht-dot" />Retour gratuit 15j</div>
           </div>
         </div>
@@ -300,7 +301,7 @@ export default function HomePage() {
             {Array.from({ length: 2 }).flatMap((_, dup) => [
               <div key={`g1-${dup}`} className="cta-g"><div className="cta-g-dot" />Paiement 100% sécurisé</div>,
               <div key={`g2-${dup}`} className="cta-g"><div className="cta-g-dot" />Retour gratuit 15 jours</div>,
-              <div key={`g3-${dup}`} className="cta-g"><div className="cta-g-dot" />Livraison Colissimo 7–13 mai</div>,
+              <div key={`g3-${dup}`} className="cta-g" suppressHydrationWarning><div className="cta-g-dot" />Livraison Colissimo {formatDeliveryRange()}</div>,
               <div key={`g4-${dup}`} className="cta-g"><div className="cta-g-dot" />5 000+ coureurs satisfaits</div>,
             ])}
           </div>

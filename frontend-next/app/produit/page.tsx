@@ -9,6 +9,7 @@ import { CartIcon } from "../components/CartDrawer";
 import { trackEvent } from "../components/Trackers";
 import { SiteFooter } from "../components/SiteFooter";
 import { showToast } from "../components/Toast";
+import { formatDeliveryRange } from "../lib/deliveryDate";
 
 type ImageEntry = { src: string; alt: string };
 
@@ -577,12 +578,12 @@ export default function ProduitPage() {
               </svg>
               Paiement sécurisé
             </div>
-            <div className="trust-item">
+            <div className="trust-item" suppressHydrationWarning>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
-              Livraison 7–13 mai
+              Livraison {formatDeliveryRange()}
             </div>
             <div className="trust-item">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
