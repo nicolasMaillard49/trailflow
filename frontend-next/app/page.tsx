@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { FloatingCTA } from "./components/FloatingCTA";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
 import { formatDeliveryRange } from "./lib/deliveryDate";
+
+import heroWoman from "@/public/images/wom-studio.png";
+import galleryMosaic1 from "@/public/images/gallery-mosaic-1.png";
+import galleryMosaic2 from "@/public/images/gallery-mosaic-2.png";
+import productFaceSol from "@/public/images/product-face-sol.png";
+import product3Quart from "@/public/images/product-3quart.png";
+import productCoteDroit from "@/public/images/product-cote-droit.png";
+import productDos from "@/public/images/product-dos.png";
+import productCoteGauche from "@/public/images/product-cote-gauche.png";
+import productDetails from "@/public/images/product-details.png";
+import womStudio from "@/public/images/wom-studio.png";
+import womStudioDos from "@/public/images/wom-studio-dos.png";
+import manStudio from "@/public/images/man-studio.png";
+import manStudioDos from "@/public/images/man-studio-dos.png";
 
 export default function HomePage() {
   // Petit script du proto : ajoute la classe .scrolled à <nav> au scroll
@@ -46,7 +61,15 @@ export default function HomePage() {
       {/* HERO */}
       <section className="hero">
         <div className="hero-media">
-          <img src="/images/wom-studio.png" alt="Femme portant le gilet TrailFlow" />
+          <Image
+            src={heroWoman}
+            alt="Femme portant le gilet TrailFlow"
+            fill
+            priority
+            sizes="(max-width: 900px) 100vw, 60vw"
+            placeholder="blur"
+            style={{ objectFit: "cover", objectPosition: "top center" }}
+          />
           <div className="hero-media-overlay" />
         </div>
         <div className="hero-content">
@@ -169,40 +192,44 @@ export default function HomePage() {
         </div>
         {/* Desktop : 2 planches horizontales stackées. Mobile : grille de cellules ci-dessous. */}
         <div className="gallery-mosaic-stack">
-          <img
-            src="/images/gallery-mosaic-1.png"
+          <Image
+            src={galleryMosaic1}
             alt="Vues principales du gilet TrailFlow — face, dos, profil"
             className="gallery-mosaic"
+            sizes="(max-width: 900px) 100vw, 90vw"
+            placeholder="blur"
           />
-          <img
-            src="/images/gallery-mosaic-2.png"
+          <Image
+            src={galleryMosaic2}
             alt="Détails du gilet TrailFlow — bretelle réfléchissante, boucle click"
             className="gallery-mosaic"
+            sizes="(max-width: 900px) 100vw, 90vw"
+            placeholder="blur"
           />
         </div>
         <div className="gallery-grid">
           <div className="gi">
-            <img src="/images/product-face-sol.png" alt="Face avec flasque" />
+            <Image src={productFaceSol} alt="Face avec flasque" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">Face · avec flasque</div>
           </div>
           <div className="gi">
-            <img src="/images/product-3quart.png" alt="3/4 avant" />
+            <Image src={product3Quart} alt="3/4 avant" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">3/4 avant</div>
           </div>
           <div className="gi">
-            <img src="/images/product-cote-droit.png" alt="Côté droit" />
+            <Image src={productCoteDroit} alt="Côté droit" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">Côté droit</div>
           </div>
           <div className="gi">
-            <img src="/images/product-dos.png" alt="Dos" />
+            <Image src={productDos} alt="Dos" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">Dos</div>
           </div>
           <div className="gi">
-            <img src="/images/product-cote-gauche.png" alt="Côté gauche" />
+            <Image src={productCoteGauche} alt="Côté gauche" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">Côté gauche</div>
           </div>
           <div className="gi">
-            <img src="/images/product-details.png" alt="Détail boucle réfléchissante" />
+            <Image src={productDetails} alt="Détail boucle réfléchissante" sizes="(max-width: 900px) 50vw, 33vw" placeholder="blur" />
             <div className="gi-label">Détail · boucle</div>
           </div>
         </div>
@@ -253,8 +280,8 @@ export default function HomePage() {
         </div>
         <div className="split-grid">
           <div className="split-card">
-            <img src="/images/wom-studio.png" alt="Femme TrailFlow — face" className="img-front" />
-            <img src="/images/wom-studio-dos.png" alt="Femme TrailFlow — dos" className="img-back" />
+            <Image src={womStudio} alt="Femme TrailFlow — face" className="img-front" sizes="(max-width: 900px) 100vw, 50vw" placeholder="blur" />
+            <Image src={womStudioDos} alt="Femme TrailFlow — dos" className="img-back" sizes="(max-width: 900px) 100vw, 50vw" placeholder="blur" />
             <div className="split-grad" />
             <div className="split-info">
               <div className="split-kicker">Running féminin</div>
@@ -263,8 +290,8 @@ export default function HomePage() {
             </div>
           </div>
           <div className="split-card">
-            <img src="/images/man-studio.png" alt="Homme TrailFlow — face" className="img-front" />
-            <img src="/images/man-studio-dos.png" alt="Homme TrailFlow — dos" className="img-back" />
+            <Image src={manStudio} alt="Homme TrailFlow — face" className="img-front" sizes="(max-width: 900px) 100vw, 50vw" placeholder="blur" />
+            <Image src={manStudioDos} alt="Homme TrailFlow — dos" className="img-back" sizes="(max-width: 900px) 100vw, 50vw" placeholder="blur" />
             <div className="split-grad" />
             <div className="split-info">
               <div className="split-kicker">Running masculin</div>

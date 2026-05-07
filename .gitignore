@@ -50,3 +50,7 @@ coverage/
 assets-raw/
 *.psd
 *.ai
+
+# Audit artefacts
+lighthouse-*.json
+/scripts/

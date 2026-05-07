@@ -1,9 +1,25 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond, Geist } from "next/font/google";
 import "./globals.css";
 import { CartDrawer } from "./components/CartDrawer";
 import { CookieBanner } from "./components/CookieBanner";
 import { Trackers } from "./components/Trackers";
 import { ToastHost } from "./components/Toast";
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
+
+const geist = Geist({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500"],
+  variable: "--font-geist",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://trailflow.boutique";
 
@@ -61,19 +77,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Geist:wght@200;300;400;500&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="fr"
+      suppressHydrationWarning
+      className={`${cormorant.variable} ${geist.variable}`}
+    >
       <body suppressHydrationWarning>
         {children}
         <CartDrawer />
