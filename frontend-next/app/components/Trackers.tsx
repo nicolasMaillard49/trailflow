@@ -4,6 +4,7 @@ import Script from "next/script";
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
 
 /**
  * Charge GA4 + Meta Pixel dès qu'une env var est définie.
@@ -58,6 +59,19 @@ export function Trackers() {
           </noscript>
         </>
       )}
+
+      {/* TikTok Pixel */}
+      {TIKTOK_PIXEL_ID && (
+        <Script id="tiktok-pixel" strategy="lazyOnload">
+          {`
+            !function (w, d, t) {
+              w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+              ttq.load('${TIKTOK_PIXEL_ID}');
+              ttq.page();
+            }(window, document, 'ttq');
+          `}
+        </Script>
+      )}
     </>
   );
 }
@@ -72,7 +86,29 @@ declare global {
   interface Window {
     gtag?: (command: string, action: string, params?: TrackPayload) => void;
     fbq?: (command: string, event: string, params?: TrackPayload, options?: { eventID?: string }) => void;
+    ttq?: {
+      track: (event: string, params?: Record<string, unknown>, options?: { event_id?: string }) => void;
+      page: () => void;
+    };
   }
+}
+
+/**
+ * Mappe un payload "format Meta" (content_ids, num_items…) vers le format
+ * attendu par TikTok (content_id + contents[]). Les noms d'events TikTok
+ * standards (ViewContent, AddToCart, InitiateCheckout, Purchase) sont
+ * identiques à ceux de Meta — on n'a donc qu'à transformer les params.
+ */
+function toTikTokPayload(payload?: TrackPayload): Record<string, unknown> | undefined {
+  if (!payload) return undefined;
+  const out: Record<string, unknown> = {};
+  if (payload.value !== undefined) out.value = payload.value;
+  if (payload.currency !== undefined) out.currency = payload.currency;
+  if (payload.content_ids !== undefined) out.content_id = payload.content_ids;
+  if (payload.content_name !== undefined) out.content_name = payload.content_name;
+  if (payload.content_type !== undefined) out.content_type = payload.content_type;
+  if (payload.num_items !== undefined) out.quantity = payload.num_items;
+  return out;
 }
 
 export function trackEvent(name: string, payload?: TrackPayload, options?: { eventID?: string }) {
@@ -86,6 +122,14 @@ export function trackEvent(name: string, payload?: TrackPayload, options?: { eve
       window.fbq("track", name, payload, { eventID: options.eventID });
     } else {
       window.fbq("track", name, payload);
+    }
+  }
+  if (window.ttq && typeof window.ttq.track === "function") {
+    const ttPayload = toTikTokPayload(payload);
+    if (options?.eventID) {
+      window.ttq.track(name, ttPayload, { event_id: options.eventID });
+    } else {
+      window.ttq.track(name, ttPayload);
     }
   }
 }
