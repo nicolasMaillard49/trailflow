@@ -1283,6 +1283,10 @@ footer {
 .floating-cta:hover { background: #fff; }
 .floating-cta svg { transition: transform 0.4s var(--ease); }
 .floating-cta:hover svg { transform: translateX(4px); }
+/* Mobile : la sticky bar .lp-sticky-bar prend le relais — pas de double CTA. */
+@media (max-width: 900px) {
+  .floating-cta { display: none; }
+}
 
 /* Footer — site conçu par */
 .footer-credit {
