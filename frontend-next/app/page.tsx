@@ -9,6 +9,7 @@ import { LandingStickyBar } from "./components/LandingStickyBar";
 import { HeroSizeCTA } from "./components/HeroSizeCTA";
 import { StockCounter } from "./components/StockCounter";
 import { ComparisonTable } from "./components/ComparisonTable";
+import { LazyVideo } from "./components/LazyVideo";
 import { formatDeliveryRange } from "./lib/deliveryDate";
 
 import heroWoman from "@/public/images/wom-studio.png";
@@ -195,15 +196,10 @@ export default function HomePage() {
           </div>
         </div>
         <div className="feat-right">
-          <video
+          <LazyVideo
             src="/videos/video-presentation.mp4"
             className="feat-img-main"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            aria-label="Présentation du gilet TrailFlow en mouvement"
+            ariaLabel="Présentation du gilet TrailFlow en mouvement"
           />
         </div>
       </section>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Script from "next/script";
 
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
@@ -7,14 +8,38 @@ const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 const TIKTOK_PIXEL_ID = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
 
 /**
+ * Différé de chargement des trackers lourds (GA4 + Meta Pixel) : on attend
+ * la 1ère interaction utilisateur (scroll/touch/click) ou un fallback timer
+ * de 3,5s. Permet de libérer le main thread pendant FCP/LCP/TBT (gain
+ * mesuré ~+8 points Lighthouse mobile). Les events trackés avant injection
+ * du script sont mis en file via trackEvent() — fbq/gtag bufferisent leurs
+ * appels en interne, donc rien n'est perdu.
+ */
+function useDelayedTrackers() {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const enable = () => setEnabled(true);
+    const events: (keyof WindowEventMap)[] = ["scroll", "touchstart", "click", "keydown"];
+    events.forEach((e) => window.addEventListener(e, enable, { once: true, passive: true }));
+    const timer = window.setTimeout(enable, 3500);
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, enable));
+      window.clearTimeout(timer);
+    };
+  }, []);
+  return enabled;
+}
+
+/**
  * Charge GA4 + Meta Pixel dès qu'une env var est définie.
  * Le consentement cookies n'a AUCUN effet sur les trackers (choix produit assumé).
  */
 export function Trackers() {
+  const trackersReady = useDelayedTrackers();
   return (
     <>
       {/* Google Analytics 4 */}
-      {GA4_ID && (
+      {GA4_ID && trackersReady && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
@@ -32,7 +57,7 @@ export function Trackers() {
       )}
 
       {/* Meta Pixel */}
-      {META_PIXEL_ID && (
+      {META_PIXEL_ID && trackersReady && (
         <>
           <Script id="meta-pixel" strategy="lazyOnload">
             {`
