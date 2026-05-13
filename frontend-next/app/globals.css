@@ -2617,3 +2617,124 @@ footer {
   .suivi-meta { grid-template-columns: 1fr; }
   .suivi-step-label { font-size: 9px; max-width: 70px; }
 }
+
+/* =============================================
+   LP STICKY BAR — mobile only, two rows (size + CTA)
+   ============================================= */
+.lp-sticky-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: rgba(14, 14, 12, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 0.5px solid rgba(240, 237, 232, 0.08);
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(100%);
+  transition: transform 240ms ease-out;
+}
+.lp-sticky-bar.is-visible {
+  transform: translateY(0);
+}
+.lp-sticky-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lp-sticky-label {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream-dk);
+  flex-shrink: 0;
+}
+.lp-sticky-sizes {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+}
+.lp-sticky-pill {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 8px;
+  border: 0.5px solid rgba(240, 237, 232, 0.25);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.lp-sticky-pill:hover:not(.is-disabled) {
+  border-color: rgba(240, 237, 232, 0.55);
+}
+.lp-sticky-pill.is-active {
+  background: var(--cream);
+  color: var(--ink);
+  border-color: var(--cream);
+}
+.lp-sticky-pill.is-disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.lp-sticky-pill:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+.lp-sticky-price {
+  flex: 1;
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 15px;
+  color: var(--cream-dk);
+}
+.lp-sticky-price s {
+  opacity: 0.5;
+  margin-right: 6px;
+}
+.lp-sticky-price strong {
+  color: var(--cream);
+  font-weight: 400;
+}
+.lp-sticky-btn {
+  height: 40px;
+  padding: 0 18px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.lp-sticky-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.lp-sticky-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.lp-sticky-btn:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .lp-sticky-bar { display: flex; }
+  /* Décale le footer pour ne pas que le contenu soit masqué par la bar. */
+  body:has(.lp-sticky-bar.is-visible) footer { padding-bottom: 120px; }
+}
