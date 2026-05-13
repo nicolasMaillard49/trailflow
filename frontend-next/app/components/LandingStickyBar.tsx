@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "../lib/cart";
 import { api } from "../lib/api";
@@ -32,6 +32,7 @@ export function LandingStickyBar() {
   const [size, setSize] = useState<string>("M");
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Rehydrate la taille depuis localStorage après le mount (évite mismatch SSR).
   useEffect(() => {
@@ -103,6 +104,46 @@ export function LandingStickyBar() {
     }
   };
 
+  // Pattern W3C radiogroup : flèches pour naviguer, Home/End pour bornes.
+  const handlePillKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    const key = e.key;
+    const isNext = key === "ArrowRight" || key === "ArrowDown";
+    const isPrev = key === "ArrowLeft" || key === "ArrowUp";
+    const isHome = key === "Home";
+    const isEnd = key === "End";
+    if (!isNext && !isPrev && !isHome && !isEnd) return;
+
+    e.preventDefault();
+    const n = SIZES.length;
+    const enabled = (i: number) => !SIZES[i].soldout;
+
+    let target = currentIndex;
+    if (isHome) {
+      target = SIZES.findIndex((s) => !s.soldout);
+    } else if (isEnd) {
+      for (let i = n - 1; i >= 0; i--) {
+        if (enabled(i)) {
+          target = i;
+          break;
+        }
+      }
+    } else {
+      const step = isNext ? 1 : -1;
+      for (let i = 1; i <= n; i++) {
+        const candidate = ((currentIndex + step * i) % n + n) % n;
+        if (enabled(candidate)) {
+          target = candidate;
+          break;
+        }
+      }
+    }
+
+    if (target < 0 || target === currentIndex) return;
+    const targetLabel = SIZES[target].label;
+    handlePickSize(targetLabel);
+    pillRefs.current[target]?.focus();
+  };
+
   const handleOrder = () => {
     if (!product || submitting) return;
     setSubmitting(true);
@@ -148,20 +189,24 @@ export function LandingStickyBar() {
       <div className="lp-sticky-row lp-sticky-row--sizes" role="radiogroup" aria-label="Choix de la taille">
         <span className="lp-sticky-label">Taille</span>
         <div className="lp-sticky-sizes">
-          {SIZES.map((s) => {
+          {SIZES.map((s, i) => {
             const active = s.label === size;
             const disabled = !!s.soldout;
             return (
               <button
                 key={s.label}
+                ref={(el) => {
+                  pillRefs.current[i] = el;
+                }}
                 type="button"
                 role="radio"
                 aria-checked={active}
                 aria-disabled={disabled}
                 disabled={disabled}
-                tabIndex={disabled ? -1 : 0}
+                tabIndex={disabled ? -1 : active ? 0 : -1}
                 className={`lp-sticky-pill${active ? " is-active" : ""}${disabled ? " is-disabled" : ""}`}
                 onClick={() => !disabled && handlePickSize(s.label)}
+                onKeyDown={(e) => handlePillKeyDown(e, i)}
               >
                 {s.label}
               </button>
