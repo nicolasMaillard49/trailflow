@@ -6,6 +6,9 @@ import { FloatingCTA } from "./components/FloatingCTA";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
 import { LandingStickyBar } from "./components/LandingStickyBar";
+import { HeroSizeCTA } from "./components/HeroSizeCTA";
+import { StockCounter } from "./components/StockCounter";
+import { ComparisonTable } from "./components/ComparisonTable";
 import { formatDeliveryRange } from "./lib/deliveryDate";
 
 import heroWoman from "@/public/images/wom-studio.png";
@@ -43,12 +46,6 @@ export default function HomePage() {
           Trail<span>Flow</span>
         </div>
         <div className="nav-r">
-          <a href="#features" className="nav-link">
-            Le produit
-          </a>
-          <a href="#proof" className="nav-link">
-            Avis
-          </a>
           <div className="nav-price">
             <s>49,90€</s> 34,90€
           </div>
@@ -91,13 +88,8 @@ export default function HomePage() {
             <span className="price-now">34,90€</span>
             <span className="price-badge">− 30%</span>
           </div>
-          <a href="/produit" className="btn-primary" id="buy">
-            Commander maintenant
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </a>
+          <HeroSizeCTA />
+          <StockCounter variant="hero" />
           <div className="hero-trust">
             <div className="ht-item"><div className="ht-dot" />Paiement sécurisé</div>
             <div className="ht-item" suppressHydrationWarning><div className="ht-dot" />Livraison {formatDeliveryRange()}</div>
@@ -306,6 +298,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* COMPARISON */}
+      <ComparisonTable />
+
       {/* SPLIT */}
       <section className="split">
         <div className="split-header">
@@ -412,6 +407,7 @@ export default function HomePage() {
             <polyline points="12 5 19 12 12 19" />
           </svg>
         </a>
+        <StockCounter variant="cta" />
         <div className="cta-guarantees">
           <div className="cta-guarantees-track">
             {Array.from({ length: 2 }).flatMap((_, dup) => [

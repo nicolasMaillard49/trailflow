@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCart } from "../lib/cart";
 import { api } from "../lib/api";
 import { parseProduct, type Product } from "../lib/schemas";
 import { trackEvent } from "./Trackers";
-import { StockCounter } from "./StockCounter";
 
 const SIZES: { label: string; soldout?: boolean }[] = [
   { label: "S" },
@@ -16,36 +15,35 @@ const SIZES: { label: string; soldout?: boolean }[] = [
   { label: "XXL", soldout: true },
 ];
 
-// Doit rester aligné avec COLOR_VARIANTS[0] dans app/produit/page.tsx.
 const DEFAULT_COLOR = "Gris perle";
 const DEFAULT_IMAGE = "/images/product-face.png";
 const FLASK_SLUG = "flasques-500ml";
 const FLASK_CART_IMAGE = "/images/flasks/pack-2-flasks.png";
-
-const formatEur = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 const STORAGE_KEY = "tf_lp_size";
 
 /**
- * Sticky bar mobile sur la LP : sélecteur de taille + CTA express.
- * Visible uniquement <900px (cf. globals.css), apparaît après 15% de scroll,
- * se cache quand la .cta-section finale entre dans le viewport.
+ * CTA hero desktop : sélecteur de taille + bouton Commander.
+ * - Mobile (<900px) : caché côté CSS — la LandingStickyBar prend le relais.
+ * - Synchro de la taille via localStorage avec LandingStickyBar.
+ * - Pas d'upsell ici : on garde le hero épuré. L'upsell flasques apparaît
+ *   uniquement depuis la sticky bar mobile et la page produit.
  */
-export function LandingStickyBar() {
-  const router = useRouter();
+export function HeroSizeCTA() {
   const add = useCart((s) => s.add);
-  const cartOpen = useCart((s) => s.isOpen);
+  const openCart = useCart((s) => s.open);
   const [product, setProduct] = useState<Product | null>(null);
   const [flaskProduct, setFlaskProduct] = useState<Product | null>(null);
   const [size, setSize] = useState<string>("M");
-  const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // Popup d'upsell flasques affichée entre le tap "Commander" et la redirection
-  // /checkout. Décision explicite oui/non — conforme art. L121-17 Code conso
-  // (pas de pré-cochage de prestation supplémentaire payante).
+  // Décoché par défaut : art. L121-17 Code conso interdit le pré-cochage d'une
+  // prestation supplémentaire payante. Mirror du comportement /produit.
+  const [addonChecked, setAddonChecked] = useState(false);
+  // L'upsell flasques n'est pas affiché d'emblée — il apparaît seulement après
+  // un premier clic sur Commander. Évite la surcharge visuelle du hero quand
+  // l'utilisateur n'a pas encore exprimé l'intention d'acheter.
   const [showFlaskUpsell, setShowFlaskUpsell] = useState(false);
   const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  // Rehydrate la taille depuis localStorage après le mount (évite mismatch SSR).
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -57,7 +55,10 @@ export function LandingStickyBar() {
     }
   }, []);
 
-  // Fetch produit — mirror exact du pattern utilisé dans /produit.
+  // Fetch produit — même pattern que LandingStickyBar, double fetch assumé
+  // (deux composants indépendants, fetch dedupliqué par le navigateur si
+  // identique au cycle de vie). Une éventuelle factorisation via SWR/React Query
+  // sera l'occasion d'un refacto plus large.
   useEffect(() => {
     let cancelled = false;
     let attempt = 0;
@@ -71,7 +72,6 @@ export function LandingStickyBar() {
           if (attempt < 3 && !cancelled) {
             setTimeout(tryFetch, 1000 * Math.pow(2, attempt - 1));
           }
-          /* Échec après 3 tentatives : on n'affiche pas la sticky bar. */
         });
     };
     tryFetch();
@@ -80,8 +80,8 @@ export function LandingStickyBar() {
     };
   }, []);
 
-  // Fetch flasques en parallèle — échec silencieux : si le backend ne renvoie
-  // pas le pack, on saute simplement l'étape upsell et on va direct /checkout.
+  // Fetch flasques — échec silencieux : si le backend ne renvoie pas le pack,
+  // la card upsell est masquée et l'utilisateur achète juste le gilet.
   useEffect(() => {
     let cancelled = false;
     api(`/products/${FLASK_SLUG}`, { parse: parseProduct })
@@ -96,32 +96,6 @@ export function LandingStickyBar() {
     };
   }, []);
 
-  // Visibilité scroll-based (mirror FloatingCTA), seuil 15%.
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement;
-      const total = h.scrollHeight - h.clientHeight;
-      if (total <= 0) return setVisible(false);
-      const progress = h.scrollTop / total;
-
-      // Hide si la CTA-section finale est dans le viewport (CTA déjà visible).
-      const cta = document.querySelector(".cta-section");
-      if (cta) {
-        const rect = cta.getBoundingClientRect();
-        if (rect.top < window.innerHeight) return setVisible(false);
-      }
-
-      setVisible(progress > 0.15);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, []);
-
   const handlePickSize = (label: string) => {
     setSize(label);
     try {
@@ -131,7 +105,6 @@ export function LandingStickyBar() {
     }
   };
 
-  // Pattern W3C radiogroup : flèches pour naviguer, Home/End pour bornes.
   const handlePillKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
     const key = e.key;
     const isNext = key === "ArrowRight" || key === "ArrowDown";
@@ -171,8 +144,15 @@ export function LandingStickyBar() {
     pillRefs.current[target]?.focus();
   };
 
-  const proceedToCheckout = (withFlask: boolean) => {
-    if (!product) return;
+  const handleOrder = () => {
+    if (!product || submitting) return;
+    // Étape 1 : si on a un flaskProduct et qu'on n'a pas encore présenté
+    // l'upsell, on le révèle et on attend un second clic pour valider.
+    if (flaskProduct && !showFlaskUpsell) {
+      setShowFlaskUpsell(true);
+      return;
+    }
+    setSubmitting(true);
 
     add({
       productId: product.id,
@@ -197,10 +177,11 @@ export function LandingStickyBar() {
       ]),
       size,
       color: DEFAULT_COLOR,
-      source: "lp_sticky",
+      source: "lp_hero",
     });
 
-    if (withFlask && flaskProduct) {
+    // Upsell : ligne séparée avec qty 1 fixe — même règle qu'en page produit.
+    if (addonChecked && flaskProduct) {
       add({
         productId: flaskProduct.id,
         slug: flaskProduct.slug,
@@ -221,43 +202,40 @@ export function LandingStickyBar() {
         contents: JSON.stringify([
           { id: flaskProduct.id, quantity: 1, item_price: flaskProduct.price },
         ]),
-        source: "lp_sticky_upsell",
+        source: "lp_hero_upsell",
       });
     }
 
     setShowFlaskUpsell(false);
-    router.push("/checkout");
-    // Filet de sécurité : si l'user fait "retour" et atterrit à nouveau sur la LP,
-    // le bouton doit redevenir actif. router.push ne renvoie pas de promesse
-    // fiable selon les versions de Next, donc on libère après un court délai.
-    setTimeout(() => setSubmitting(false), 1500);
+    setAddonChecked(false);
+    openCart();
+    setTimeout(() => setSubmitting(false), 800);
   };
 
-  const handleOrder = () => {
-    if (!product || submitting) return;
-    setSubmitting(true);
-
-    // Si on a le pack flasques en stock dans le state, on propose l'upsell
-    // avant la redirection. Sinon (fetch échoué), on file direct /checkout.
-    if (flaskProduct) {
-      setShowFlaskUpsell(true);
-      return;
-    }
-    proceedToCheckout(false);
-  };
-
-  // Pas de produit chargé ou cart drawer ouvert → on ne rend rien.
-  if (!product) return null;
-  if (cartOpen) return null;
+  // Si le backend ne répond pas, on dégrade vers l'ancien CTA simple (lien
+  // /produit) pour ne pas casser le hero. C'est le même fallback que celui
+  // de la sticky bar (cachée si !product).
+  if (!product) {
+    return (
+      <a href="/produit" className="btn-primary" id="buy">
+        Commander maintenant
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </a>
+    );
+  }
 
   return (
-    <div
-      className={`lp-sticky-bar${visible ? " is-visible" : ""}`}
-      aria-hidden={!visible}
-    >
-      <div className="lp-sticky-row lp-sticky-row--sizes" role="radiogroup" aria-label="Choix de la taille">
-        <span className="lp-sticky-label">Taille</span>
-        <div className="lp-sticky-sizes">
+    <div className="hero-buy">
+      <div
+        className="hero-buy-sizes"
+        role="radiogroup"
+        aria-label="Choix de la taille"
+      >
+        <span className="hero-buy-label">Taille</span>
+        <div className="hero-buy-pills">
           {SIZES.map((s, i) => {
             const active = s.label === size;
             const disabled = !!s.soldout;
@@ -273,7 +251,7 @@ export function LandingStickyBar() {
                 aria-disabled={disabled}
                 disabled={disabled}
                 tabIndex={disabled ? -1 : active ? 0 : -1}
-                className={`lp-sticky-pill${active ? " is-active" : ""}${disabled ? " is-disabled" : ""}`}
+                className={`hero-buy-pill${active ? " is-active" : ""}${disabled ? " is-disabled" : ""}`}
                 onClick={() => !disabled && handlePickSize(s.label)}
                 onKeyDown={(e) => handlePillKeyDown(e, i)}
               >
@@ -284,71 +262,66 @@ export function LandingStickyBar() {
         </div>
       </div>
 
-      <div className="lp-sticky-row lp-sticky-row--cta">
-        <div className="lp-sticky-price">
-          {product.comparePrice !== null && (
-            <>
-              <s>{formatEur(product.comparePrice)}</s>{" "}
-            </>
-          )}
-          <strong>{formatEur(product.price)}</strong>
-          <StockCounter variant="sticky" />
-        </div>
-        <button
-          type="button"
-          className="lp-sticky-btn"
-          onClick={handleOrder}
-          disabled={submitting}
-          aria-label={`Commander en taille ${size}, ${formatEur(product.price).replace("€", " euros")}`}
-        >
-          Commander →
-        </button>
-      </div>
-
-      {showFlaskUpsell && flaskProduct && (
-        <div
-          className="lp-upsell-sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="lp-upsell-title"
-        >
-          <span className="lp-upsell-eyebrow" id="lp-upsell-title">
+      {flaskProduct && showFlaskUpsell && (
+        <label className={`addon${addonChecked ? " is-on" : ""}`}>
+          <input
+            type="checkbox"
+            className="addon-input"
+            checked={addonChecked}
+            onChange={(e) => setAddonChecked(e.target.checked)}
+            aria-label={`Ajouter ${flaskProduct.name} pour ${flaskProduct.price}€`}
+          />
+          <span className="addon-eyebrow">
             <span>Complément</span>
-            <span className="lp-upsell-eyebrow-aside">Optionnel</span>
-          </span>
-          <div className="lp-upsell-row">
-            <span className="lp-upsell-frame">
-              <img src={FLASK_CART_IMAGE} alt="" className="lp-upsell-img" />
+            <span className="addon-state" aria-live="polite">
+              {addonChecked ? "Inclus" : "Optionnel"}
             </span>
-            <span className="lp-upsell-text">
-              <span className="lp-upsell-title-text">{flaskProduct.name}</span>
-              <span className="lp-upsell-detail">
+          </span>
+          <span className="addon-row">
+            <span className="addon-frame">
+              <Image
+                src={FLASK_CART_IMAGE}
+                alt=""
+                width={80}
+                height={80}
+                className="addon-img"
+                style={{ width: "100%", height: "auto" }}
+              />
+            </span>
+            <span className="addon-text">
+              <span className="addon-title">{flaskProduct.name}</span>
+              <span className="addon-detail">
                 Push-pull · Glisse dans les poches avant
               </span>
             </span>
-            <span className="lp-upsell-price-tag">
-              +&nbsp;{formatEur(flaskProduct.price)}
+            <span className="addon-aside">
+              <span className="addon-price">+&nbsp;{flaskProduct.price}&nbsp;€</span>
+              <span className="addon-toggle" aria-hidden="true">
+                <span className="addon-toggle-thumb" />
+              </span>
             </span>
-          </div>
-          <div className="lp-upsell-actions">
-            <button
-              type="button"
-              className="lp-upsell-btn lp-upsell-btn--ghost"
-              onClick={() => proceedToCheckout(false)}
-            >
-              Sans
-            </button>
-            <button
-              type="button"
-              className="lp-upsell-btn lp-upsell-btn--primary"
-              onClick={() => proceedToCheckout(true)}
-              autoFocus
-            >
-              Ajouter →
-            </button>
-          </div>
-        </div>
+          </span>
+        </label>
       )}
+
+      <button
+        type="button"
+        className="btn-primary"
+        id="buy"
+        onClick={handleOrder}
+        disabled={submitting}
+        aria-label={
+          showFlaskUpsell
+            ? `Confirmer la commande en taille ${size}`
+            : `Commander en taille ${size}`
+        }
+      >
+        {showFlaskUpsell ? "Confirmer ma commande" : "Commander maintenant"}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </button>
     </div>
   );
 }

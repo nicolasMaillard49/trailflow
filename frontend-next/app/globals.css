@@ -2995,3 +2995,261 @@ footer {
   .faq-item > summary { font-size: 17px; padding: 20px 4px; }
   .faq-item p { font-size: 13px; padding-bottom: 24px; }
 }
+
+/* =============================================
+   HERO — sélecteur de taille + CTA desktop (item 1)
+   Mobile (<900px) : caché, la LandingStickyBar prend le relais.
+   ============================================= */
+.hero-buy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeUp 0.8s 0.8s both;
+  align-self: flex-start;
+}
+.hero-buy-sizes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hero-buy-label {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted-lt);
+  flex-shrink: 0;
+}
+.hero-buy-pills {
+  display: flex;
+  gap: 6px;
+}
+.hero-buy-pill {
+  min-width: 38px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0.5px solid rgba(240, 237, 232, 0.25);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+.hero-buy-pill:hover:not(.is-disabled) {
+  border-color: rgba(240, 237, 232, 0.55);
+}
+.hero-buy-pill.is-active {
+  background: var(--cream);
+  color: var(--ink);
+  border-color: var(--cream);
+}
+.hero-buy-pill.is-disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+.hero-buy-pill:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+
+/* Cadre maxi pour l'addon flasques dans le hero — les classes .addon sont
+   partagées avec /produit, on contraint juste la largeur pour rester aligné
+   avec le bouton CTA. */
+.hero-buy .addon { max-width: 460px; }
+
+/* =============================================
+   STOCK COUNTER — pseudo-dynamique (item 6)
+   ============================================= */
+.stock-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-lt);
+}
+.stock-counter strong {
+  font-weight: 500;
+  color: var(--cream);
+}
+.stock-counter-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(216, 91, 91, 0.12);
+  animation: stock-pulse 2.2s ease-in-out infinite;
+}
+@keyframes stock-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(216, 91, 91, 0.12); }
+  50%      { box-shadow: 0 0 0 7px rgba(216, 91, 91, 0.02); }
+}
+.stock-counter--hero {
+  margin-top: 18px;
+}
+.stock-counter--cta {
+  margin-top: 18px;
+  justify-content: center;
+}
+.stock-counter--sticky {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--muted-lt);
+  margin-left: 8px;
+}
+.stock-counter--sticky .stock-counter-dot {
+  width: 5px;
+  height: 5px;
+}
+
+/* =============================================
+   COMPARISON TABLE — item 5
+   ============================================= */
+.compare {
+  padding: 140px 56px;
+  background: var(--ink);
+  border-top: 0.5px solid rgba(240, 237, 232, 0.06);
+  border-bottom: 0.5px solid rgba(240, 237, 232, 0.06);
+}
+.compare-header {
+  margin-bottom: 64px;
+  max-width: 720px;
+}
+.compare-header h2 {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(30px, 2.8vw, 46px);
+  line-height: 1.1;
+  color: var(--cream);
+  margin-bottom: 18px;
+}
+.compare-header h2 em {
+  font-style: italic;
+  color: var(--muted-lt);
+}
+.compare-sub {
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted-lt);
+  max-width: 480px;
+}
+.compare-table {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  border-top: 0.5px solid rgba(240, 237, 232, 0.08);
+}
+.compare-row {
+  display: contents;
+}
+.compare-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 24px;
+  border-bottom: 0.5px solid rgba(240, 237, 232, 0.08);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--cream-dk);
+}
+.compare-cell--label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+.compare-row--head .compare-cell {
+  padding-top: 18px;
+  padding-bottom: 18px;
+  border-bottom: 0.5px solid rgba(240, 237, 232, 0.18);
+  background: rgba(240, 237, 232, 0.02);
+}
+.compare-brand {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  color: var(--cream);
+}
+.compare-brand--other {
+  color: var(--muted);
+  font-style: normal;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.compare-cell--tf {
+  background: rgba(42, 122, 90, 0.06);
+  color: var(--cream);
+  font-weight: 400;
+  border-left: 1px solid rgba(42, 122, 90, 0.25);
+  border-right: 1px solid rgba(42, 122, 90, 0.25);
+}
+.compare-cell--other {
+  color: var(--muted);
+}
+.compare-check {
+  color: var(--green);
+  flex-shrink: 0;
+}
+.compare-footnote {
+  margin-top: 28px;
+  font-size: 10px;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 720px;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 900px) {
+  /* Hero CTA mobile : on garde le sélecteur (partage le localStorage avec la
+     sticky bar) pour qu'aucun ajout panier ne se fasse à l'aveugle. Le bouton
+     prend toute la largeur. */
+  .hero-buy {
+    width: 100%;
+    align-self: stretch;
+  }
+  .hero-buy-sizes {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  /* Le stock counter du hero ferait doublon avec celui de la sticky bar dès
+     qu'elle apparaît au scroll. On le garde car l'utilisateur peut acheter
+     avant que la sticky bar n'apparaisse. */
+  .stock-counter--hero {
+    margin-top: 12px;
+    align-self: center;
+  }
+
+  .compare { padding: 80px 20px; }
+  .compare-header { margin-bottom: 36px; }
+  .compare-table {
+    grid-template-columns: 1.1fr 1fr 1fr;
+  }
+  .compare-cell {
+    padding: 14px 10px;
+    font-size: 11px;
+    gap: 6px;
+  }
+  .compare-cell--label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+  .compare-brand { font-size: 14px; }
+  .compare-brand--other { font-size: 10px; letter-spacing: 0.1em; }
+  .compare-check { width: 11px; height: 11px; }
+}
