@@ -15,8 +15,11 @@ const SIZES: { label: string; soldout?: boolean }[] = [
   { label: "XXL", soldout: true },
 ];
 
+// Doit rester aligné avec COLOR_VARIANTS[0] dans app/produit/page.tsx.
 const DEFAULT_COLOR = "Gris perle";
 const DEFAULT_IMAGE = "/images/product-face.png";
+
+const formatEur = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 const STORAGE_KEY = "tf_lp_size";
 
 /**
@@ -175,6 +178,10 @@ export function LandingStickyBar() {
     });
 
     router.push("/checkout");
+    // Filet de sécurité : si l'user fait "retour" et atterrit à nouveau sur la LP,
+    // le bouton doit redevenir actif. router.push ne renvoie pas de promesse
+    // fiable selon les versions de Next, donc on libère après un court délai.
+    setTimeout(() => setSubmitting(false), 1500);
   };
 
   // Pas de produit chargé ou cart drawer ouvert → on ne rend rien.
@@ -217,14 +224,19 @@ export function LandingStickyBar() {
 
       <div className="lp-sticky-row lp-sticky-row--cta">
         <div className="lp-sticky-price">
-          <s>49,90€</s> <strong>34,90€</strong>
+          {product.comparePrice !== null && (
+            <>
+              <s>{formatEur(product.comparePrice)}</s>{" "}
+            </>
+          )}
+          <strong>{formatEur(product.price)}</strong>
         </div>
         <button
           type="button"
           className="lp-sticky-btn"
           onClick={handleOrder}
           disabled={submitting}
-          aria-label={`Commander en taille ${size}, 34,90 euros`}
+          aria-label={`Commander en taille ${size}, ${formatEur(product.price).replace("€", " euros")}`}
         >
           Commander →
         </button>
