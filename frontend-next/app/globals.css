@@ -306,18 +306,69 @@ video.feat-img-main {
   color: var(--cream); line-height: 1.1;
 }
 .proof-header h2 em { font-style: italic; color: var(--muted-lt); }
-.reviews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-bottom: 2px; }
+.reviews { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; margin-bottom: 2px; }
 .review {
-  background: rgba(240,237,232,0.03); padding: 36px;
+  background: rgba(240,237,232,0.03);
   border: 0.5px solid rgba(240,237,232,0.06);
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  align-items: stretch;
+  min-height: 260px;
 }
-.review-stars { font-size: 11px; color: var(--cream-dk); letter-spacing: 4px; margin-bottom: 20px; }
+.review-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: var(--ink-soft);
+}
+.review-body { padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; }
+.review-stars { font-size: 10px; color: var(--cream-dk); letter-spacing: 4px; margin-bottom: 14px; }
 .review-quote {
   font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
   font-weight: 300; font-style: italic;
-  font-size: 17px; line-height: 1.65; color: var(--cream-dk); margin-bottom: 24px;
+  font-size: 15px; line-height: 1.55; color: var(--cream-dk); margin-bottom: 18px;
 }
-.review-meta { display: flex; flex-direction: column; gap: 6px; }
+.review-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Bouton "Voir plus d'avis" — secondaire, discret entre la grille et les stats. */
+.reviews-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 32px auto 0;
+  padding: 16px 28px;
+  background: transparent;
+  color: var(--cream-dk);
+  border: 0.5px solid rgba(240, 237, 232, 0.25);
+  border-radius: 2px;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.reviews-more:hover {
+  border-color: rgba(240, 237, 232, 0.6);
+  color: var(--cream);
+  background: rgba(240, 237, 232, 0.04);
+}
+.reviews-more:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+.reviews-more svg {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.reviews-more:hover svg { transform: translateY(2px); }
 .review-meta-top {
   display: flex;
   align-items: center;
@@ -603,6 +654,13 @@ footer {
   .gi:nth-child(6) { display: none; }
   .gi img { object-fit: contain; height: auto; width: 100%; display: block; }
   .reviews { grid-template-columns: 1fr; }
+  /* Mobile : à l'intérieur de chaque carte, photo dessus, texte dessous —
+     évite la photo écrasée à 42% de la largeur écran. */
+  .review {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .review-photo { aspect-ratio: 4 / 5; }
   .stats { grid-template-columns: 1fr 1fr; }
   .split-grid { grid-template-columns: 1fr; }
   footer {

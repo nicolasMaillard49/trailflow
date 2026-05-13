@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { FloatingCTA } from "./components/FloatingCTA";
 import { CartIcon } from "./components/CartDrawer";
@@ -25,7 +25,43 @@ import womStudioDos from "@/public/images/wom-studio-dos.png";
 import manStudio from "@/public/images/man-studio.png";
 import manStudioDos from "@/public/images/man-studio-dos.png";
 
+// Source de vérité des avis affichés sur la LP. Hors composant pour éviter
+// la recréation à chaque rendu — la liste est statique.
+const REVIEWS = [
+  { photo: "/images/reviews/review-1.avif", stars: "★ ★ ★ ★ ★", quote: "Parfait pour mes sorties longue distance. Le gilet ne bouge pas d'un millimètre même sur terrain accidenté.", name: "T. Dubois", meta: "Mars 2026 · Ultra-trail · Lyon" },
+  { photo: "/images/reviews/review-2.avif", stars: "★ ★ ★ ★ ★", quote: "Le meilleur rapport qualité-prix du marché. Salomon pour le même usage, c'est cinq fois plus cher.", name: "C. Martin", meta: "Avril 2026 · Marathon · Paris" },
+  { photo: "/images/reviews/review-3.avif", stars: "★ ★ ★ ★ ☆", quote: "Ultra léger, on oublie qu'on le porte. Les bandes réfléchissantes sont vraiment efficaces pour les sorties à l'aube.", name: "M. Laurent", meta: "Avril 2026 · Vélo route · Bordeaux" },
+  { photo: "/images/reviews/review-4.avif", stars: "★ ★ ★ ★ ★", quote: "Acheté pour un trail de 30 km. Zéro frottement, zéro mouvement parasite. Les flasques tiennent en place en descente technique.", name: "Camille B.", meta: "Mai 2026 · Trail · Annecy" },
+  { photo: "/images/reviews/review-5.avif", stars: "★ ★ ★ ★ ★", quote: "Habitué des sorties longues, je cherchais un gilet sans gadgets. Celui-ci coche tout : poches accessibles, ajustement précis, séchage rapide.", name: "Alexis T.", meta: "Mai 2026 · Course longue · Toulouse" },
+  { photo: "/images/reviews/review-6.avif", stars: "★ ★ ★ ★ ★", quote: "Le rapport qualité-prix est imbattable. J'avais des doutes au déballage mais après 200 km les coutures tiennent.", name: "Dominique L.", meta: "Avril 2026 · Course nature · Nantes" },
+  { photo: "/images/reviews/review-7.avif", stars: "★ ★ ★ ★ ★", quote: "Testé en altitude sur deux week-ends. Capacité de rangement nickel, accès rapide aux barres énergétiques sans s'arrêter.", name: "Sasha M.", meta: "Mars 2026 · Trail · Grenoble" },
+  { photo: "/images/reviews/review-8.avif", stars: "★ ★ ★ ★ ★", quote: "Léger, ajustable, accessible. Trois critères atteints. Le quatrième c'est le prix, et il est imbattable.", name: "Charlie R.", meta: "Février 2026 · Ultra-trail · Chambéry" },
+  { photo: "/images/reviews/review-9.avif", stars: "★ ★ ★ ★ ★", quote: "Très satisfait après six semaines d'utilisation intensive. Les boucles ne se desserrent pas, les coutures tiennent.", name: "Morgan B.", meta: "Février 2026 · Course matinale · Strasbourg" },
+  { photo: "/images/reviews/review-10.avif", stars: "★ ★ ★ ★ ★", quote: "La poche téléphone tactile change la vie en sortie longue. Plus besoin d'enlever le gilet pour répondre à un message.", name: "Sam V.", meta: "Mars 2026 · Trail technique · Aix-en-Provence" },
+  { photo: "/images/reviews/review-11.avif", stars: "★ ★ ★ ★ ★", quote: "Acheté un peu sceptique au vu du prix mais largement à la hauteur. L'aération dorsale tient même en été.", name: "Robin S.", meta: "Janvier 2026 · Marathon · Marseille" },
+  { photo: "/images/reviews/review-12.avif", stars: "★ ★ ★ ★ ★", quote: "Testé sur un marathon, puis sur des sorties trail jusqu'à 40 km. Aucun signe de fatigue du matériel.", name: "Eden P.", meta: "Mars 2026 · Course longue · Rennes" },
+  { photo: "/images/reviews/review-13.avif", stars: "★ ★ ★ ★ ★", quote: "Six poches utiles, pas une de trop. Tout est pensé pour l'accessibilité en mouvement.", name: "Lou C.", meta: "Avril 2026 · Trail nature · Briançon" },
+  { photo: "/images/reviews/review-14.avif", stars: "★ ★ ★ ★ ★", quote: "Confortable, sec, stable. Trois mots qui résument ce gilet. Et zéro irritation après quatre heures de course.", name: "Andréa V.", meta: "Janvier 2026 · Trail · Pau" },
+  { photo: "/images/reviews/review-15.avif", stars: "★ ★ ★ ★ ☆", quote: "Le système anti-ballottement est sérieux. Comparé à mon ancien gilet, je gagne en concentration sur la foulée.", name: "Maël G.", meta: "Février 2026 · Course longue · La Rochelle" },
+  { photo: "/images/reviews/review-16.avif", stars: "★ ★ ★ ★ ★", quote: "Idéal pour les sorties autour de deux heures. J'y mets gel, téléphone, clés, et tout reste en place.", name: "P. Lefèvre", meta: "Décembre 2025 · Trail · Montpellier" },
+  { photo: "/images/reviews/review-17.avif", stars: "★ ★ ★ ★ ★", quote: "Bonne surprise : on dirait un produit à 80 €. Coutures propres, élastiques de qualité, finitions soignées.", name: "K. Bertrand", meta: "Décembre 2025 · Vélo gravel · Tours" },
+  { photo: "/images/reviews/review-18.avif", stars: "★ ★ ★ ★ ★", quote: "Compatible avec mes flasques 500 ml sans bricolage. Ajustement millimétré sur le buste, ça se sent au premier kilomètre.", name: "J. Roussel", meta: "Mars 2026 · Trail des Cévennes · Nîmes" },
+  { photo: "/images/reviews/review-19.avif", stars: "★ ★ ★ ★ ★", quote: "Pour 35 €, je ne pensais pas avoir ce niveau de tenue sur du long. Bien joué.", name: "N. Tessier", meta: "Janvier 2026 · Ultra-trail · Bayonne" },
+  { photo: "/images/reviews/review-20.avif", stars: "★ ★ ★ ★ ★", quote: "Boucle de 25 km avec dénivelé : le gilet est resté collé au corps, aucun saut, aucun frottement.", name: "F. Renard", meta: "Décembre 2025 · Trail urbain · Lille" },
+  { photo: "/images/reviews/review-21.avif", stars: "★ ★ ★ ★ ★", quote: "La poche dorsale zippée est plus profonde qu'il n'y paraît. J'y range veste légère et buff sans tirer sur les bretelles.", name: "Yael M.", meta: "Avril 2026 · Course longue · Caen" },
+  { photo: "/images/reviews/review-22.avif", stars: "★ ★ ★ ★ ★", quote: "Rapport poids/capacité excellent. Je le préfère à mon précédent gilet qui était deux fois plus cher.", name: "Noa T.", meta: "Mai 2026 · Trail · Dijon" },
+];
+const REVIEWS_INITIAL = 5;
+
 export default function HomePage() {
+  // Pagination des avis : on affiche les 5 premiers et on déploie le reste
+  // au clic. État local, pas de back-end, conservé en mémoire de session.
+  const [reviewsExpanded, setReviewsExpanded] = useState(false);
+  const visibleReviews = useMemo(
+    () => (reviewsExpanded ? REVIEWS : REVIEWS.slice(0, REVIEWS_INITIAL)),
+    [reviewsExpanded],
+  );
+
   // Petit script du proto : ajoute la classe .scrolled à <nav> au scroll
   useEffect(() => {
     const nav = document.getElementById("nav");
@@ -235,61 +271,50 @@ export default function HomePage() {
           <h2>5 000 coureurs<br /><em>ne se trompent pas</em></h2>
         </div>
         <div className="reviews">
-          <div className="review">
-            <div className="review-stars">★ ★ ★ ★ ★</div>
-            <p className="review-quote">
-              « Parfait pour mes sorties trail longue distance. Le gilet ne bouge pas d&apos;un millimètre même sur terrain accidenté. »
-            </p>
-            <div className="review-meta">
-              <div className="review-meta-top">
-                <span className="review-name">Thomas D.</span>
-                <span className="review-verified" aria-label="Achat vérifié">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Achat vérifié
-                </span>
+          {visibleReviews.map((r) => (
+            <div className="review" key={r.name}>
+              <Image
+                src={r.photo}
+                alt=""
+                width={400}
+                height={500}
+                className="review-photo"
+                sizes="(max-width: 900px) 100vw, 33vw"
+                loading="lazy"
+              />
+              <div className="review-body">
+                <div className="review-stars">{r.stars}</div>
+                <p className="review-quote">« {r.quote} »</p>
+                <div className="review-meta">
+                  <div className="review-meta-top">
+                    <span className="review-name">{r.name}</span>
+                    <span className="review-verified" aria-label="Achat vérifié">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Achat vérifié
+                    </span>
+                  </div>
+                  <div className="review-meta-bottom">{r.meta}</div>
+                </div>
               </div>
-              <div className="review-meta-bottom">Mars 2026 · Ultra-traileur · Lyon</div>
             </div>
-          </div>
-          <div className="review">
-            <div className="review-stars">★ ★ ★ ★ ★</div>
-            <p className="review-quote">
-              « Le meilleur rapport qualité-prix du marché. Salomon pour le même usage, c&apos;est cinq fois plus cher. »
-            </p>
-            <div className="review-meta">
-              <div className="review-meta-top">
-                <span className="review-name">Sarah M.</span>
-                <span className="review-verified" aria-label="Achat vérifié">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Achat vérifié
-                </span>
-              </div>
-              <div className="review-meta-bottom">Avril 2026 · Marathonienne · Paris</div>
-            </div>
-          </div>
-          <div className="review">
-            <div className="review-stars">★ ★ ★ ★ ☆</div>
-            <p className="review-quote">
-              « Ultra léger, on oublie qu&apos;on le porte. Les bandes réfléchissantes sont vraiment efficaces pour mes sorties à l&apos;aube. »
-            </p>
-            <div className="review-meta">
-              <div className="review-meta-top">
-                <span className="review-name">Marc L.</span>
-                <span className="review-verified" aria-label="Achat vérifié">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Achat vérifié
-                </span>
-              </div>
-              <div className="review-meta-bottom">Avril 2026 · Cycliste · Bordeaux</div>
-            </div>
-          </div>
+          ))}
         </div>
+        {!reviewsExpanded && (
+          <button
+            type="button"
+            className="reviews-more"
+            onClick={() => setReviewsExpanded(true)}
+            aria-expanded={false}
+            aria-controls="reviews-grid"
+          >
+            Voir plus
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        )}
         <div className="stats">
           <div className="stat"><span className="stat-n">5K+</span><div className="stat-l">Vendus</div></div>
           <div className="stat"><span className="stat-n">4.7</span><div className="stat-l">Note moyenne</div></div>
