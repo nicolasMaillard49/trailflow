@@ -59,7 +59,7 @@ export default function HomePage() {
       </nav>
 
       {/* HERO */}
-      <section className="hero">
+      <section className="hero" data-hero="">
         <div className="hero-media">
           <Image
             src={heroWoman}
