@@ -305,45 +305,45 @@ export function LandingStickyBar() {
 
       {showFlaskUpsell && flaskProduct && (
         <div
-          className="lp-upsell-overlay"
+          className="lp-upsell-sheet"
           role="dialog"
           aria-modal="true"
           aria-labelledby="lp-upsell-title"
-          onClick={(e) => {
-            // Clic backdrop = refus (par défaut sécurité = pas d'ajout payant).
-            if (e.target === e.currentTarget) proceedToCheckout(false);
-          }}
         >
-          <div className="lp-upsell-card">
-            <div className="lp-upsell-image">
-              <img src={FLASK_CART_IMAGE} alt="" />
-            </div>
-            <h3 id="lp-upsell-title" className="lp-upsell-title">
-              On ajoute les flasques ?
-            </h3>
-            <p className="lp-upsell-desc">
-              Pack 2 flasques souples 500ml — compatibles avec les poches avant du gilet.
-            </p>
-            <div className="lp-upsell-price">
-              <strong>+ {formatEur(flaskProduct.price)}</strong>
-            </div>
-            <div className="lp-upsell-actions">
-              <button
-                type="button"
-                className="lp-upsell-btn lp-upsell-btn--primary"
-                onClick={() => proceedToCheckout(true)}
-                autoFocus
-              >
-                Oui, ajouter
-              </button>
-              <button
-                type="button"
-                className="lp-upsell-btn lp-upsell-btn--ghost"
-                onClick={() => proceedToCheckout(false)}
-              >
-                Non merci
-              </button>
-            </div>
+          <span className="lp-upsell-eyebrow" id="lp-upsell-title">
+            <span>Complément</span>
+            <span className="lp-upsell-eyebrow-aside">Optionnel</span>
+          </span>
+          <div className="lp-upsell-row">
+            <span className="lp-upsell-frame">
+              <img src={FLASK_CART_IMAGE} alt="" className="lp-upsell-img" />
+            </span>
+            <span className="lp-upsell-text">
+              <span className="lp-upsell-title-text">{flaskProduct.name}</span>
+              <span className="lp-upsell-detail">
+                Push-pull · Glisse dans les poches avant
+              </span>
+            </span>
+            <span className="lp-upsell-price-tag">
+              +&nbsp;{formatEur(flaskProduct.price)}
+            </span>
+          </div>
+          <div className="lp-upsell-actions">
+            <button
+              type="button"
+              className="lp-upsell-btn lp-upsell-btn--ghost"
+              onClick={() => proceedToCheckout(false)}
+            >
+              Sans
+            </button>
+            <button
+              type="button"
+              className="lp-upsell-btn lp-upsell-btn--primary"
+              onClick={() => proceedToCheckout(true)}
+              autoFocus
+            >
+              Ajouter →
+            </button>
           </div>
         </div>
       )}

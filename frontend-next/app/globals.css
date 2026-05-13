@@ -2744,85 +2744,109 @@ footer {
 }
 
 /* =============================================
-   LP UPSELL — popup flasques avant checkout
+   LP UPSELL — bottom sheet flasques avant checkout
+   Mirror du visuel .addon de /produit (frame polaroid, italique Cormorant).
    ============================================= */
-.lp-upsell-overlay {
+.lp-upsell-sheet {
   position: fixed;
-  inset: 0;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
   z-index: 200;
-  background: rgba(14, 14, 12, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(14, 14, 12, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(240, 237, 232, 0.12);
+  border-radius: 6px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  animation: lp-upsell-fade-in 180ms ease-out;
-}
-@keyframes lp-upsell-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.lp-upsell-card {
-  width: 100%;
-  max-width: 360px;
-  background: var(--cream);
-  color: var(--ink);
-  border-radius: 4px;
-  padding: 28px 24px 20px;
-  text-align: center;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  flex-direction: column;
+  gap: 12px;
   animation: lp-upsell-slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-width: 460px;
+  margin: 0 auto;
 }
 @keyframes lp-upsell-slide-up {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-.lp-upsell-image {
-  width: 96px;
-  height: 96px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  background: var(--cream-dk);
+.lp-upsell-eyebrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lp-upsell-eyebrow-aside {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--cream-dk);
+}
+.lp-upsell-row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  column-gap: 14px;
+  align-items: center;
+}
+.lp-upsell-frame {
+  width: 48px;
+  height: 48px;
+  background: var(--cream);
+  border-radius: 2px;
+  padding: 4px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
-.lp-upsell-image img {
-  width: 80%;
-  height: 80%;
+.lp-upsell-img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  display: block;
 }
-.lp-upsell-title {
-  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
-  font-weight: 400;
-  font-style: italic;
-  font-size: 22px;
-  margin: 0 0 8px;
-  color: var(--ink);
-}
-.lp-upsell-desc {
-  font-family: var(--font-geist), 'Geist', sans-serif;
-  font-size: 12px;
-  font-weight: 300;
-  line-height: 1.5;
-  color: var(--muted);
-  margin: 0 0 14px;
-}
-.lp-upsell-price {
-  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
-  font-size: 18px;
-  color: var(--ink);
-  margin-bottom: 20px;
-}
-.lp-upsell-actions {
+.lp-upsell-text {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.lp-upsell-title-text {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.1;
+  color: var(--cream);
+}
+.lp-upsell-detail {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 300;
+}
+.lp-upsell-price-tag {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 17px;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.lp-upsell-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 8px;
 }
 .lp-upsell-btn {
-  height: 44px;
+  height: 40px;
   padding: 0 18px;
   border: 0.5px solid transparent;
   border-radius: 2px;
@@ -2832,20 +2856,27 @@ footer {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: opacity 120ms ease, background 120ms ease;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
 }
 .lp-upsell-btn--primary {
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--cream);
+  color: var(--ink);
 }
 .lp-upsell-btn--primary:hover { opacity: 0.88; }
 .lp-upsell-btn--ghost {
   background: transparent;
-  color: var(--muted);
-  border-color: rgba(14, 14, 12, 0.15);
+  color: var(--cream-dk);
+  border-color: rgba(240, 237, 232, 0.18);
 }
-.lp-upsell-btn--ghost:hover { color: var(--ink); }
+.lp-upsell-btn--ghost:hover {
+  color: var(--cream);
+  border-color: rgba(240, 237, 232, 0.4);
+}
 .lp-upsell-btn:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--cream);
   outline-offset: 2px;
+}
+/* Mobile only — la sticky bar n'apparaît qu'<900px, l'upsell suit. */
+@media (min-width: 901px) {
+  .lp-upsell-sheet { display: none; }
 }
