@@ -5,6 +5,7 @@ import Image from "next/image";
 import { FloatingCTA } from "./components/FloatingCTA";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
+import { LandingStickyBar } from "./components/LandingStickyBar";
 import { formatDeliveryRange } from "./lib/deliveryDate";
 
 import heroWoman from "@/public/images/wom-studio.png";
@@ -338,6 +339,7 @@ export default function HomePage() {
       <SiteFooter />
 
       <FloatingCTA />
+      <LandingStickyBar />
     </>
   );
 }
