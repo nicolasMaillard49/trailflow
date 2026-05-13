@@ -2,14 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { FloatingCTA } from "./components/FloatingCTA";
+import dynamic from "next/dynamic";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
-import { LandingStickyBar } from "./components/LandingStickyBar";
 import { HeroSizeCTA } from "./components/HeroSizeCTA";
 import { StockCounter } from "./components/StockCounter";
-import { ComparisonTable } from "./components/ComparisonTable";
 import { LazyVideo } from "./components/LazyVideo";
+import { ComparisonTable } from "./components/ComparisonTable";
+
+// Composants chargés en différé pour alléger le JS critique du first paint.
+// FloatingCTA et LandingStickyBar ne se rendent qu'après un seuil de scroll
+// (cf. leur useEffect), donc l'absence en SSR n'a aucun impact visuel ; on
+// gagne ~50 KB de JS hors du bundle initial.
+const FloatingCTA = dynamic(
+  () => import("./components/FloatingCTA").then((m) => m.FloatingCTA),
+  { ssr: false },
+);
+const LandingStickyBar = dynamic(
+  () => import("./components/LandingStickyBar").then((m) => m.LandingStickyBar),
+  { ssr: false },
+);
 import { formatDeliveryRange } from "./lib/deliveryDate";
 
 import heroWoman from "@/public/images/wom-studio.png";

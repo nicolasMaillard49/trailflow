@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Comparatif TrailFlow vs gilet d'entrée de gamme générique.
  * Volontairement pas de marque nommée (anti-litige) — descriptif "gilet trail

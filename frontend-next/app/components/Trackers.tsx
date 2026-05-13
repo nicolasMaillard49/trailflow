@@ -85,9 +85,11 @@ export function Trackers() {
         </>
       )}
 
-      {/* TikTok Pixel — afterInteractive car le Pixel Helper TikTok est plus
-          strict que ceux de Meta/GA4 sur le timing de chargement. */}
-      {TIKTOK_PIXEL_ID && (
+      {/* TikTok Pixel — gated comme les autres derrière useDelayedTrackers
+          pour libérer le main thread. Stratégie afterInteractive conservée
+          parce que le Pixel Helper TikTok est plus strict que ceux de
+          Meta/GA4 une fois le tag injecté (vérification temporelle interne). */}
+      {TIKTOK_PIXEL_ID && trackersReady && (
         <Script id="tiktok-pixel" strategy="afterInteractive">
           {`
             !function (w, d, t) {
