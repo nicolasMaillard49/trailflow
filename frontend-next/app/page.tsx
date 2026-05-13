@@ -248,21 +248,54 @@ export default function HomePage() {
             <p className="review-quote">
               « Parfait pour mes sorties trail longue distance. Le gilet ne bouge pas d&apos;un millimètre même sur terrain accidenté. »
             </p>
-            <div className="review-meta">Thomas D. — Ultra-traileur · Lyon</div>
+            <div className="review-meta">
+              <div className="review-meta-top">
+                <span className="review-name">Thomas D.</span>
+                <span className="review-verified" aria-label="Achat vérifié">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Achat vérifié
+                </span>
+              </div>
+              <div className="review-meta-bottom">Mars 2026 · Ultra-traileur · Lyon</div>
+            </div>
           </div>
           <div className="review">
             <div className="review-stars">★ ★ ★ ★ ★</div>
             <p className="review-quote">
               « Le meilleur rapport qualité-prix du marché. Salomon pour le même usage, c&apos;est cinq fois plus cher. »
             </p>
-            <div className="review-meta">Sarah M. — Marathonienne · Paris</div>
+            <div className="review-meta">
+              <div className="review-meta-top">
+                <span className="review-name">Sarah M.</span>
+                <span className="review-verified" aria-label="Achat vérifié">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Achat vérifié
+                </span>
+              </div>
+              <div className="review-meta-bottom">Avril 2026 · Marathonienne · Paris</div>
+            </div>
           </div>
           <div className="review">
             <div className="review-stars">★ ★ ★ ★ ☆</div>
             <p className="review-quote">
               « Ultra léger, on oublie qu&apos;on le porte. Les bandes réfléchissantes sont vraiment efficaces pour mes sorties à l&apos;aube. »
             </p>
-            <div className="review-meta">Marc L. — Cycliste · Bordeaux</div>
+            <div className="review-meta">
+              <div className="review-meta-top">
+                <span className="review-name">Marc L.</span>
+                <span className="review-verified" aria-label="Achat vérifié">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Achat vérifié
+                </span>
+              </div>
+              <div className="review-meta-bottom">Avril 2026 · Cycliste · Bordeaux</div>
+            </div>
           </div>
         </div>
         <div className="stats">
@@ -300,6 +333,61 @@ export default function HomePage() {
               <div className="split-desc">T-shirt technique + short running · Réglable S–XL</div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="faq" id="faq">
+        <div className="faq-header">
+          <span className="section-eyebrow">Questions fréquentes</span>
+          <h2>On répond <em>avant que tu ne demandes</em></h2>
+        </div>
+        <div className="faq-list">
+          <details className="faq-item">
+            <summary>
+              <span>Les flasques sont-elles incluses ?</span>
+              <span className="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <p>
+              Non, les flasques souples 500 ml sont en option à 7,90 € le pack de 2.
+              Elles s&apos;intègrent dans les poches avant du gilet et peuvent être
+              ajoutées au moment de la commande.
+            </p>
+          </details>
+          <details className="faq-item">
+            <summary>
+              <span>D&apos;où le gilet est-il expédié ?</span>
+              <span className="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <p>
+              Les commandes sont préparées par notre partenaire logistique et expédiées
+              en Colissimo avec numéro de suivi. Tu reçois un email de tracking dès le
+              départ du colis.
+            </p>
+          </details>
+          <details className="faq-item">
+            <summary>
+              <span>Quel est le délai de livraison ?</span>
+              <span className="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <p>
+              5 à 8 jours ouvrés en France métropolitaine. La date estimée précise
+              s&apos;affiche au moment de la commande, recalculée selon le jour où tu
+              passes commande.
+            </p>
+          </details>
+          <details className="faq-item">
+            <summary>
+              <span>Comment choisir ma taille ?</span>
+              <span className="faq-icon" aria-hidden="true">+</span>
+            </summary>
+            <p>
+              Le gilet est unisexe et ajusté — prends ta taille habituelle de t-shirt
+              running. Guide indicatif (tour de poitrine) : S 84–92 cm · M 92–100 cm ·
+              L 100–108 cm · XL 108–116 cm. En cas de doute, retour gratuit sous 15
+              jours.
+            </p>
+          </details>
         </div>
       </section>
 
