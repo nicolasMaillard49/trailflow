@@ -18,6 +18,8 @@ const SIZES: { label: string; soldout?: boolean }[] = [
 // Doit rester aligné avec COLOR_VARIANTS[0] dans app/produit/page.tsx.
 const DEFAULT_COLOR = "Gris perle";
 const DEFAULT_IMAGE = "/images/product-face.png";
+const FLASK_SLUG = "flasques-500ml";
+const FLASK_CART_IMAGE = "/images/flasks/pack-2-flasks.png";
 
 const formatEur = (n: number) => `${n.toFixed(2).replace(".", ",")}€`;
 const STORAGE_KEY = "tf_lp_size";
@@ -32,9 +34,14 @@ export function LandingStickyBar() {
   const add = useCart((s) => s.add);
   const cartOpen = useCart((s) => s.isOpen);
   const [product, setProduct] = useState<Product | null>(null);
+  const [flaskProduct, setFlaskProduct] = useState<Product | null>(null);
   const [size, setSize] = useState<string>("M");
   const [visible, setVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Popup d'upsell flasques affichée entre le tap "Commander" et la redirection
+  // /checkout. Décision explicite oui/non — conforme art. L121-17 Code conso
+  // (pas de pré-cochage de prestation supplémentaire payante).
+  const [showFlaskUpsell, setShowFlaskUpsell] = useState(false);
   const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Rehydrate la taille depuis localStorage après le mount (évite mismatch SSR).
@@ -67,6 +74,22 @@ export function LandingStickyBar() {
         });
     };
     tryFetch();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Fetch flasques en parallèle — échec silencieux : si le backend ne renvoie
+  // pas le pack, on saute simplement l'étape upsell et on va direct /checkout.
+  useEffect(() => {
+    let cancelled = false;
+    api(`/products/${FLASK_SLUG}`, { parse: parseProduct })
+      .then((p) => {
+        if (!cancelled) setFlaskProduct(p);
+      })
+      .catch(() => {
+        /* silencieux */
+      });
     return () => {
       cancelled = true;
     };
@@ -147,9 +170,8 @@ export function LandingStickyBar() {
     pillRefs.current[target]?.focus();
   };
 
-  const handleOrder = () => {
-    if (!product || submitting) return;
-    setSubmitting(true);
+  const proceedToCheckout = (withFlask: boolean) => {
+    if (!product) return;
 
     add({
       productId: product.id,
@@ -177,11 +199,50 @@ export function LandingStickyBar() {
       source: "lp_sticky",
     });
 
+    if (withFlask && flaskProduct) {
+      add({
+        productId: flaskProduct.id,
+        slug: flaskProduct.slug,
+        name: flaskProduct.name,
+        size: "",
+        color: "",
+        price: flaskProduct.price,
+        quantity: 1,
+        image: FLASK_CART_IMAGE,
+      });
+      trackEvent("AddToCart", {
+        content_name: flaskProduct.name,
+        content_ids: flaskProduct.id,
+        content_type: "product",
+        value: flaskProduct.price,
+        currency: "EUR",
+        num_items: 1,
+        contents: JSON.stringify([
+          { id: flaskProduct.id, quantity: 1, item_price: flaskProduct.price },
+        ]),
+        source: "lp_sticky_upsell",
+      });
+    }
+
+    setShowFlaskUpsell(false);
     router.push("/checkout");
     // Filet de sécurité : si l'user fait "retour" et atterrit à nouveau sur la LP,
     // le bouton doit redevenir actif. router.push ne renvoie pas de promesse
     // fiable selon les versions de Next, donc on libère après un court délai.
     setTimeout(() => setSubmitting(false), 1500);
+  };
+
+  const handleOrder = () => {
+    if (!product || submitting) return;
+    setSubmitting(true);
+
+    // Si on a le pack flasques en stock dans le state, on propose l'upsell
+    // avant la redirection. Sinon (fetch échoué), on file direct /checkout.
+    if (flaskProduct) {
+      setShowFlaskUpsell(true);
+      return;
+    }
+    proceedToCheckout(false);
   };
 
   // Pas de produit chargé ou cart drawer ouvert → on ne rend rien.
@@ -241,6 +302,51 @@ export function LandingStickyBar() {
           Commander →
         </button>
       </div>
+
+      {showFlaskUpsell && flaskProduct && (
+        <div
+          className="lp-upsell-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lp-upsell-title"
+          onClick={(e) => {
+            // Clic backdrop = refus (par défaut sécurité = pas d'ajout payant).
+            if (e.target === e.currentTarget) proceedToCheckout(false);
+          }}
+        >
+          <div className="lp-upsell-card">
+            <div className="lp-upsell-image">
+              <img src={FLASK_CART_IMAGE} alt="" />
+            </div>
+            <h3 id="lp-upsell-title" className="lp-upsell-title">
+              On ajoute les flasques ?
+            </h3>
+            <p className="lp-upsell-desc">
+              Pack 2 flasques souples 500ml — compatibles avec les poches avant du gilet.
+            </p>
+            <div className="lp-upsell-price">
+              <strong>+ {formatEur(flaskProduct.price)}</strong>
+            </div>
+            <div className="lp-upsell-actions">
+              <button
+                type="button"
+                className="lp-upsell-btn lp-upsell-btn--primary"
+                onClick={() => proceedToCheckout(true)}
+                autoFocus
+              >
+                Oui, ajouter
+              </button>
+              <button
+                type="button"
+                className="lp-upsell-btn lp-upsell-btn--ghost"
+                onClick={() => proceedToCheckout(false)}
+              >
+                Non merci
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
