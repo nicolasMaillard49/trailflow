@@ -36,9 +36,10 @@ This spec combines both audit items into a single mobile-only component for V1.
 `frontend-next/app/components/LandingStickyBar.tsx`
 
 - Client component (`"use client"`).
-- Imports `useCart` for `addItem` (existing context).
-- Imports `trackEvent` from existing `Trackers` module.
-- Uses Next.js `useRouter` for the `/checkout` redirect.
+- Uses `useCart` Zustand store from `app/lib/cart.ts` — store method is `add` (not `addItem`).
+- Uses `trackEvent` from `app/components/Trackers.tsx`.
+- Uses `api()` from `app/lib/api.ts` with `parseProduct` from `app/lib/schemas.ts` to fetch the product (slug `gilet-trailflow`) on mount — same pattern as `app/produit/page.tsx`. Avoids hardcoding backend UUIDs that differ across envs.
+- Uses `useRouter` from `next/navigation` (Next.js 16) for the `/checkout` redirect.
 
 ### Mounted in
 `frontend-next/app/page.tsx` — single mount near the end of the LP tree, after main content.
@@ -49,8 +50,9 @@ This spec combines both audit items into a single mobile-only component for V1.
 - When `CartDrawer` is open — read open state from existing cart context if exposed; otherwise the bar can stay visible (drawer overlay covers it visually).
 
 ### Visibility trigger
-- `IntersectionObserver` watching the hero section element. Bar becomes visible (slides up via `translateY`) when hero leaves the viewport.
-- Hidden initially (`translateY(100%)`) so it doesn't compete with hero CTA.
+- Scroll listener (mirrors the existing `FloatingCTA` pattern at `app/components/FloatingCTA.tsx`): show once `scrollTop / (scrollHeight - clientHeight) > 0.15` (15% — earlier than FloatingCTA's 30% because the bar IS the conversion driver, not a secondary nudge).
+- Hide when the `.cta-section` element (the final hero CTA block) is within the viewport — the user already sees a direct CTA there.
+- Hidden initially (`translateY(100%)`) so it doesn't compete with the hero CTA at the top.
 
 ## Component contract
 
@@ -60,8 +62,8 @@ State:
   - size: "S" | "M" | "L" | "XL" | "XXL"  (default "M", persisted in localStorage key "tf_lp_size")
   - visible: boolean                       (toggled by IntersectionObserver)
 External effects on click "Commander":
-  1. addItem({ productId, slug, name: "TrailFlow Hydration Vest", size, color: "Gris perle", price: 34.9, quantity: 1, image: "/images/product-face.png" })
-  2. trackEvent("AddToCart", { source: "lp_sticky", size, color: "Gris perle", value: 34.9, currency: "EUR" })
+  1. cart.add({ productId: product.id, slug: product.slug, name: product.name, size, color: "Gris perle", price: product.price, quantity: 1, image: "/images/product-face.png" })
+  2. trackEvent("AddToCart", { content_name: product.name, content_ids: product.id, content_type: "product", value: product.price, currency: "EUR", num_items: 1, contents: JSON.stringify([{ id: product.id, quantity: 1, item_price: product.price }]), size, color: "Gris perle", source: "lp_sticky" })
   3. router.push("/checkout")
 ```
 
