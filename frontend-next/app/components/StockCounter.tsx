@@ -23,7 +23,7 @@ function computeStock(now: number): number {
   return Math.max(STOCK_MIN, STOCK_INITIAL - ticks);
 }
 
-type Variant = "hero" | "sticky" | "cta";
+type Variant = "hero" | "hero-inline" | "sticky" | "cta";
 
 export function StockCounter({ variant = "hero" }: { variant?: Variant }) {
   const [stock, setStock] = useState<number | null>(null);
@@ -41,14 +41,27 @@ export function StockCounter({ variant = "hero" }: { variant?: Variant }) {
     return <span className={`stock-counter stock-counter--${variant}`} aria-hidden="true" />;
   }
 
+  // Variant hero-inline : format court (juste "<n> en stock") pour tenir
+  // sur la même ligne que "Livraison gratuite". Les autres variants gardent
+  // l'urgence du "Plus que".
+  const compact = variant === "hero-inline";
+
   return (
     <span
       className={`stock-counter stock-counter--${variant}`}
       role="status"
-      aria-label={`Plus que ${stock} pièces en stock`}
+      aria-label={`${stock} pièces en stock`}
     >
       <span className="stock-counter-dot" />
-      Plus que <strong>{stock}</strong> en stock
+      {compact ? (
+        <>
+          <strong>{stock}</strong> en stock
+        </>
+      ) : (
+        <>
+          Plus que <strong>{stock}</strong> en stock
+        </>
+      )}
     </span>
   );
 }

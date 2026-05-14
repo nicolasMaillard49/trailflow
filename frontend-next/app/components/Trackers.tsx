@@ -31,11 +31,38 @@ function useDelayedTrackers() {
 }
 
 /**
+ * Décide si on doit charger les trackers. Désactivé :
+ * - hors prod (dev local, preview Railway) — pour ne pas polluer GA4/Meta/TikTok
+ *   avec les sessions de dev.
+ * - si l'URL contient `?notrack=1` (set un localStorage persistant).
+ * - si `localStorage.tf_notrack === "1"` — pour exclure les visites perso en prod.
+ */
+function useTrackersAllowed() {
+  const [allowed, setAllowed] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production") return;
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("notrack") === "1") {
+        window.localStorage.setItem("tf_notrack", "1");
+      }
+      if (window.localStorage.getItem("tf_notrack") === "1") return;
+    } catch {
+      /* localStorage indisponible — on autorise (default safe pour prod). */
+    }
+    setAllowed(true);
+  }, []);
+  return allowed;
+}
+
+/**
  * Charge GA4 + Meta Pixel dès qu'une env var est définie.
  * Le consentement cookies n'a AUCUN effet sur les trackers (choix produit assumé).
  */
 export function Trackers() {
-  const trackersReady = useDelayedTrackers();
+  const allowed = useTrackersAllowed();
+  const delayed = useDelayedTrackers();
+  const trackersReady = allowed && delayed;
   return (
     <>
       {/* Google Analytics 4 */}
@@ -141,6 +168,11 @@ function toTikTokPayload(payload?: TrackPayload): Record<string, unknown> | unde
 
 export function trackEvent(name: string, payload?: TrackPayload, options?: { eventID?: string }) {
   if (typeof window === "undefined") return;
+  // Si les trackers n'ont pas été chargés (dev / notrack), fbq/gtag/ttq ne sont
+  // pas définis et les blocs ci-dessous sont skip naturellement. On garde
+  // quand même le guard NODE_ENV pour les cas où un script externe aurait
+  // injecté fbq (ex: extension navigateur).
+  if (process.env.NODE_ENV !== "production") return;
   if (typeof window.gtag === "function") window.gtag("event", name, payload);
   if (typeof window.fbq === "function") {
     // Le 4e arg de fbq est utilisé par Meta pour dédoublonner avec un event

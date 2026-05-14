@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { CartIcon } from "./components/CartDrawer";
@@ -9,6 +9,8 @@ import { HeroSizeCTA } from "./components/HeroSizeCTA";
 import { StockCounter } from "./components/StockCounter";
 import { LazyVideo } from "./components/LazyVideo";
 import { ComparisonTable } from "./components/ComparisonTable";
+import { CircularReviews } from "./components/CircularReviews";
+import { useHeroColor, findHeroColor } from "./lib/heroColor";
 
 // Composants chargés en différé pour alléger le JS critique du first paint.
 // FloatingCTA et LandingStickyBar ne se rendent qu'après un seuil de scroll
@@ -64,16 +66,20 @@ const REVIEWS = [
   { photo: "/images/reviews/review-21.avif", stars: "★ ★ ★ ★ ★", quote: "La poche dorsale zippée est plus profonde qu'il n'y paraît. J'y range veste légère et buff sans tirer sur les bretelles.", name: "Yael M.", meta: "Avril 2026 · Course longue · Caen" },
   { photo: "/images/reviews/review-22.avif", stars: "★ ★ ★ ★ ★", quote: "Rapport poids/capacité excellent. Je le préfère à mon précédent gilet qui était deux fois plus cher.", name: "Noa T.", meta: "Mai 2026 · Trail · Dijon" },
 ];
-const REVIEWS_INITIAL = 5;
 
 export default function HomePage() {
-  // Pagination des avis : on affiche les 5 premiers et on déploie le reste
-  // au clic. État local, pas de back-end, conservé en mémoire de session.
-  const [reviewsExpanded, setReviewsExpanded] = useState(false);
-  const visibleReviews = useMemo(
-    () => (reviewsExpanded ? REVIEWS : REVIEWS.slice(0, REVIEWS_INITIAL)),
-    [reviewsExpanded],
-  );
+  // Tant que l'utilisateur n'a pas explicitement choisi une couleur, on garde
+  // l'image originale solo (wom-studio.png) — image LCP optimisée et identité
+  // visuelle d'origine. Au premier clic sur une pastille, on swap vers le
+  // combo femme + homme dans la bonne couleur.
+  const colorName = useHeroColor((s) => s.color);
+  const colorPicked = useHeroColor((s) => s.picked);
+  const heroVariant = findHeroColor(colorName);
+  const heroSrc = colorPicked ? heroVariant.hero : heroWoman;
+  const heroAlt = colorPicked
+    ? `Femme et homme portant le gilet TrailFlow ${colorName.toLowerCase()}`
+    : "Femme portant le gilet TrailFlow";
+  const heroKey = colorPicked ? heroVariant.name : "default";
 
   // Petit script du proto : ajoute la classe .scrolled à <nav> au scroll
   useEffect(() => {
@@ -106,11 +112,12 @@ export default function HomePage() {
       </nav>
 
       {/* HERO */}
-      <section className="hero">
+      <section className="hero hero--light">
         <div className="hero-media">
           <Image
-            src={heroWoman}
-            alt="Femme portant le gilet TrailFlow"
+            key={heroKey}
+            src={heroSrc}
+            alt={heroAlt}
             fill
             priority
             sizes="(max-width: 900px) 100vw, 60vw"
@@ -128,9 +135,8 @@ export default function HomePage() {
             <em>Reste léger.</em>
           </h1>
           <p className="hero-body">
-            Le gilet technique qui s&apos;oublie sur le corps. Mesh réfléchissant,
-            boucles anti-ballottement, poche téléphone — tout ce qu&apos;il faut, rien
-            de superflu.
+            Le gilet trail qui s&apos;oublie. Mesh réfléchissant, anti-ballottement,
+            poche téléphone.
           </p>
           <div className="hero-price-block">
             <span className="price-was">49,90€</span>
@@ -138,7 +144,6 @@ export default function HomePage() {
             <span className="price-badge">− 30%</span>
           </div>
           <HeroSizeCTA />
-          <StockCounter variant="hero" />
           <div className="hero-trust">
             <div className="ht-item"><div className="ht-dot" />Paiement sécurisé</div>
             <div className="ht-item" suppressHydrationWarning><div className="ht-dot" />Livraison {formatDeliveryRange()}</div>
@@ -278,51 +283,7 @@ export default function HomePage() {
           <span className="section-eyebrow">Témoignages</span>
           <h2>5 000 coureurs<br /><em>ne se trompent pas</em></h2>
         </div>
-        <div className="reviews">
-          {visibleReviews.map((r) => (
-            <div className="review" key={r.name}>
-              <Image
-                src={r.photo}
-                alt=""
-                width={400}
-                height={500}
-                className="review-photo"
-                sizes="(max-width: 900px) 100vw, 33vw"
-                loading="lazy"
-              />
-              <div className="review-body">
-                <div className="review-stars">{r.stars}</div>
-                <p className="review-quote">« {r.quote} »</p>
-                <div className="review-meta">
-                  <div className="review-meta-top">
-                    <span className="review-name">{r.name}</span>
-                    <span className="review-verified" aria-label="Achat vérifié">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Achat vérifié
-                    </span>
-                  </div>
-                  <div className="review-meta-bottom">{r.meta}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        {!reviewsExpanded && (
-          <button
-            type="button"
-            className="reviews-more"
-            onClick={() => setReviewsExpanded(true)}
-            aria-expanded={false}
-            aria-controls="reviews-grid"
-          >
-            Voir plus
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-        )}
+        <CircularReviews reviews={REVIEWS} />
         <div className="stats">
           <div className="stat"><span className="stat-n">5K+</span><div className="stat-l">Vendus</div></div>
           <div className="stat"><span className="stat-n">4.7</span><div className="stat-l">Note moyenne</div></div>

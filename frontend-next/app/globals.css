@@ -31,42 +31,74 @@ nav#nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 200;
   display: flex; align-items: center; justify-content: space-between;
   padding: 20px 56px;
-  transition: background 0.4s, border-color 0.4s;
+  transition: background 0.4s, border-color 0.4s, color 0.4s;
   border-bottom: 0.5px solid transparent;
+  /* Au-dessus du hero light (état non-scrolled), la nav doit lire en ink.
+     Au scroll, on bascule sur le fond dark glassmorphism → texte cream. */
+  color: var(--ink);
 }
 nav#nav.scrolled {
   background: rgba(14,14,12,0.94);
   backdrop-filter: blur(20px);
   border-bottom-color: rgba(240,237,232,0.06);
+  color: var(--cream);
 }
 .logo {
   font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
   font-weight: 300; font-size: 22px;
   letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--cream);
+  color: inherit;
   text-decoration: none;
 }
 .logo span { color: var(--muted); }
 .nav-r { display: flex; align-items: center; gap: 32px; }
 .nav-link {
   font-size: 11px; font-weight: 300; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--muted-lt);
-  text-decoration: none; transition: color 0.2s;
+  text-transform: uppercase; color: inherit; opacity: 0.7;
+  text-decoration: none; transition: opacity 0.2s, color 0.2s;
   background: none; border: none; cursor: pointer; font-family: inherit;
 }
-.nav-link:hover { color: var(--cream); }
+.nav-link:hover { opacity: 1; }
 .nav-price {
   font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
-  font-weight: 300; font-size: 17px; color: var(--cream-dk);
+  font-weight: 300; font-size: 17px; color: inherit;
   letter-spacing: 0.04em;
 }
-.nav-price s { color: var(--muted); font-size: 13px; margin-right: 6px; }
+.nav-price s {
+  color: var(--muted); font-size: 13px; margin-right: 6px;
+  /* Idem .price-was : strike custom centré sur la mid-height des chiffres
+     (l'élément <s> hérite de text-decoration: line-through qu'on neutralise). */
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+}
+.nav-price s::after {
+  content: "";
+  position: absolute;
+  left: -1px; right: -1px;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transform: translateY(-1px);
+  pointer-events: none;
+}
 .nav-btn {
   font-family: var(--font-geist), 'Geist', sans-serif;
   font-size: 11px; font-weight: 400; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--ink);
-  background: var(--cream); padding: 11px 24px; border-radius: 2px;
-  text-decoration: none; transition: opacity 0.2s; border: none; cursor: pointer;
+  text-transform: uppercase;
+  /* État non-scrolled (au-dessus du hero light) : ink-bg / cream-text pour
+     ressortir sur le cream. État scrolled (fond dark) : on inverse vers
+     cream-bg / ink-text — l'ancien rendu d'origine. */
+  color: var(--cream);
+  background: var(--ink);
+  padding: 11px 24px; border-radius: 2px;
+  text-decoration: none;
+  transition: opacity 0.2s, background 0.4s, color 0.4s;
+  border: none; cursor: pointer;
+}
+nav#nav.scrolled .nav-btn {
+  background: var(--cream);
+  color: var(--ink);
 }
 .nav-btn:hover { opacity: 0.85; }
 
@@ -78,14 +110,144 @@ nav#nav.scrolled {
   position: relative;
   overflow: hidden;
 }
+
+/* =============================================
+   HERO — variante thème clair
+   Inverse les couleurs du hero seul, le reste du site reste dark.
+   Posé en bloc séparé pour pouvoir retirer ou commuter facilement.
+   ============================================= */
+.hero--light { background: var(--cream); }
+.hero--light .hero-media-overlay {
+  background: linear-gradient(to right, transparent 55%, var(--cream) 100%);
+}
+.hero--light .hero-tag { color: var(--muted); }
+.hero--light .hero-h1 { color: var(--ink); }
+.hero--light .hero-h1 strong { color: var(--ink); }
+.hero--light .hero-h1 em { color: var(--muted); }
+.hero--light .hero-body { color: #4A4843; }
+.hero--light .hero-index { color: var(--muted); }
+.hero--light .price-was { color: var(--muted); }
+.hero--light .price-now { color: var(--ink); }
+.hero--light .ht-item { color: var(--muted); }
+.hero--light .ht-dot { background: var(--muted); }
+.hero--light .btn-primary { background: var(--ink); color: var(--cream); }
+.hero--light .btn-primary:hover { opacity: 0.88; }
+.hero--light .hero-buy-color-eyebrow { color: var(--muted); }
+.hero--light .hero-buy-color-label { color: var(--ink); }
+.hero--light .hero-buy-color-dot { border-color: rgba(14, 14, 12, 0.25); }
+.hero--light .hero-buy-color-dot:hover { border-color: rgba(14, 14, 12, 0.55); }
+.hero--light .hero-buy-color-dot.is-active { border-color: var(--ink); }
+.hero--light .hero-buy-pill {
+  color: var(--ink);
+  border-color: rgba(14, 14, 12, 0.25);
+}
+.hero--light .hero-buy-pill:hover:not(.is-disabled) {
+  border-color: rgba(14, 14, 12, 0.55);
+}
+.hero--light .hero-buy-pill.is-active {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+.hero--light .hero-buy-pill:focus-visible { outline-color: var(--ink); }
+.hero--light .hero-buy-ship { color: var(--muted); }
+.hero--light .hero-buy-ship-dot { background: var(--green); }
+.hero--light .stock-counter { color: var(--muted); }
+.hero--light .stock-counter strong { color: var(--ink); }
+
+/* =============================================
+   HERO — sélecteur quantité inline (à côté des tailles)
+   Minimaliste : pas de card, juste +/- autour du chiffre, aligné sur les
+   pills de taille en hauteur.
+   ============================================= */
+.hero-buy-qty-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 24px;
+  flex-shrink: 0;
+}
+.hero-buy-qty-mini {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  color: var(--cream);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.2s, color 0.2s;
+  opacity: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-buy-qty-mini:hover:not(:disabled) { opacity: 0.7; }
+.hero-buy-qty-mini:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.hero-buy-qty-mini:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.hero-buy-qty-mini-val {
+  min-width: 24px;
+  text-align: center;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+/* Overrides hero-light : tout passe en ink. */
+.hero--light .hero-buy-qty-mini { color: var(--ink); }
+.hero--light .hero-buy-qty-mini-val { color: var(--ink); }
+
+/* Modal upsell flask sur hero light : carte sombre qui ressort
+   franchement sur le cream. Inversion totale du contenu. */
+.hero--light .addon {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--cream);
+}
+.hero--light .addon-eyebrow { color: var(--muted-lt); }
+.hero--light .addon-state { color: var(--cream-dk); }
+.hero--light .addon.is-on .addon-state { color: #6fb89a; }
+.hero--light .addon-title { color: var(--cream-dk); }
+.hero--light .addon.is-on .addon-title { color: var(--cream); }
+.hero--light .addon-detail { color: var(--muted-lt); }
+.hero--light .addon-price { color: var(--cream); }
+.hero--light .addon-toggle { border-color: rgba(240, 237, 232, 0.4); }
+.hero--light .addon-toggle-thumb { background: var(--cream-dk); }
+.hero--light .addon.is-on .addon-toggle {
+  background: var(--cream);
+  border-color: var(--cream);
+}
+.hero--light .addon.is-on .addon-toggle-thumb { background: var(--ink); }
+
 .hero-media {
   position: relative; overflow: hidden;
-  background: #161614;
+  /* Pas de background ici — le hero parent gère sa propre couleur (ink en
+     mode dark, cream en mode light). Évite la bande grise sous la nav. */
+  background: transparent;
+  /* Marge haute minimale — la photo remonte presque au sommet, juste assez
+     pour que le bouton "Commander" de la nav ne touche pas le visage. */
+  padding-top: 28px;
 }
 .hero-media img {
   width: 100%; height: 100%;
   object-fit: cover; object-position: top center; display: block;
   animation: heroReveal 1.6s var(--ease) forwards;
+  /* Override des inline styles de Next/Image (fill) pour respecter le padding
+     du parent — sans ça l'image se positionne en inset:0 et passe sous la nav. */
+  top: 28px !important;
+  height: calc(100% - 28px) !important;
 }
 @keyframes heroReveal {
   from { transform: scale(1.08); opacity: 0.6; }
@@ -140,8 +302,24 @@ nav#nav.scrolled {
 .price-was {
   font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
   font-weight: 300; font-size: 18px;
-  color: var(--muted-lt); text-decoration: line-through;
+  color: var(--muted-lt);
   letter-spacing: 0.02em;
+  /* Strike via pseudo-element pour contrôler la position verticale —
+     `text-decoration: line-through` se cale sur les métriques de la police
+     (Cormorant a une ligne haute) et ressort visiblement décalé du centre
+     visuel des chiffres. */
+  position: relative;
+  display: inline-block;
+}
+.price-was::after {
+  content: "";
+  position: absolute;
+  left: -1px; right: -1px;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transform: translateY(-1px);
+  pointer-events: none;
 }
 .price-now {
   font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
@@ -306,82 +484,118 @@ video.feat-img-main {
   color: var(--cream); line-height: 1.1;
 }
 .proof-header h2 em { font-style: italic; color: var(--muted-lt); }
-.reviews { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; margin-bottom: 2px; }
-.review {
-  background: rgba(240,237,232,0.03);
-  border: 0.5px solid rgba(240,237,232,0.06);
-  display: grid;
-  grid-template-columns: 42% 1fr;
-  align-items: stretch;
-  min-height: 260px;
+/* =============================================
+   CIRCULAR REVIEWS — carousel autoplay avec photo
+   3D rotation (active/left/right). Remplace l'ancienne
+   grille .reviews / .review.
+   ============================================= */
+.circ-rev {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto 24px;
+  outline: none;
 }
-.review-photo {
+.circ-rev:focus-visible {
+  outline: 2px solid rgba(240, 237, 232, 0.4);
+  outline-offset: 12px;
+}
+.circ-rev-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 72px;
+  align-items: center;
+}
+.circ-rev-photos {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  perspective: 1200px;
+}
+.circ-rev-photo {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: transform 0.8s cubic-bezier(.4, 2, .3, 1), opacity 0.8s cubic-bezier(.4, 2, .3, 1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+  background: var(--ink-soft);
+}
+.circ-rev-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  background: var(--ink-soft);
 }
-.review-body { padding: 24px 28px; display: flex; flex-direction: column; justify-content: center; }
-.review-stars { font-size: 10px; color: var(--cream-dk); letter-spacing: 4px; margin-bottom: 14px; }
-.review-quote {
-  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
-  font-weight: 300; font-style: italic;
-  font-size: 15px; line-height: 1.55; color: var(--cream-dk); margin-bottom: 18px;
+.circ-rev-photo--active {
+  z-index: 3;
+  opacity: 1;
+  transform: translateX(0) translateY(0) scale(1) rotateY(0deg);
 }
-.review-meta {
+.circ-rev-photo--left {
+  z-index: 2;
+  opacity: 0.55;
+  transform: translateX(-14%) translateY(-5%) scale(0.86) rotateY(14deg);
+}
+.circ-rev-photo--right {
+  z-index: 2;
+  opacity: 0.55;
+  transform: translateX(14%) translateY(-5%) scale(0.86) rotateY(-14deg);
+}
+.circ-rev-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 32px;
+  min-width: 0;
 }
-
-/* Bouton "Voir plus d'avis" — secondaire, discret entre la grille et les stats. */
-.reviews-more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 32px auto 0;
-  padding: 16px 28px;
-  background: transparent;
-  color: var(--cream-dk);
-  border: 0.5px solid rgba(240, 237, 232, 0.25);
-  border-radius: 2px;
-  font-family: var(--font-geist), system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
+.circ-rev-text {
+  min-width: 0;
 }
-.reviews-more:hover {
-  border-color: rgba(240, 237, 232, 0.6);
-  color: var(--cream);
-  background: rgba(240, 237, 232, 0.04);
-}
-.reviews-more:focus-visible {
-  outline: 2px solid var(--cream);
-  outline-offset: 3px;
-}
-.reviews-more svg {
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-.reviews-more:hover svg { transform: translateY(2px); }
-.review-meta-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.review-name {
+.circ-rev-stars {
   font-size: 12px;
-  font-weight: 400;
   color: var(--cream);
-  letter-spacing: 0.04em;
+  letter-spacing: 4px;
+  margin-bottom: 18px;
 }
-.review-verified {
+.circ-rev-quote {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(20px, 1.7vw, 26px);
+  line-height: 1.5;
+  color: var(--cream);
+  margin: 0 0 24px 0;
+}
+.circ-rev-quote::before { content: "« "; color: var(--muted-lt); }
+.circ-rev-quote::after { content: " »"; color: var(--muted-lt); }
+.circ-rev-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(4px);
+  animation: circRevWord 0.5s ease forwards;
+}
+@keyframes circRevWord {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+.circ-rev-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.circ-rev-name {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--cream);
+}
+.circ-rev-verified {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -394,14 +608,68 @@ video.feat-img-main {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.review-verified svg {
-  flex-shrink: 0;
-}
-.review-meta-bottom {
+.circ-rev-verified svg { flex-shrink: 0; }
+.circ-rev-detail {
+  font-family: var(--font-geist), system-ui, sans-serif;
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
+}
+/* Indicateur de swipe — visible uniquement en mobile (sous 900px).
+   La flèche subit un léger slide vers la gauche en boucle pour suggérer
+   le geste. Disparaît au premier touch détecté côté JS. */
+.circ-rev-swipe-hint {
+  display: none;
+}
+@media (max-width: 900px) {
+  .circ-rev-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .circ-rev-photos {
+    aspect-ratio: 3 / 4;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .circ-rev-quote {
+    font-size: 19px;
+  }
+  /* Empêche le navigateur de swiper la page entière quand on swipe le carousel.
+     touch-action: pan-y autorise le scroll vertical mais bloque le geste
+     horizontal natif sur l'élément. */
+  .circ-rev { touch-action: pan-y; }
+  .circ-rev-swipe-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 18px auto 0;
+    padding: 6px 10px;
+    color: var(--muted-lt);
+    font-family: var(--font-geist), system-ui, sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    width: max-content;
+    animation: circRevSwipeFade 0.5s 0.6s both;
+  }
+  .circ-rev-swipe-hint svg {
+    animation: circRevSwipeNudge 1.6s ease-in-out infinite;
+  }
+}
+@keyframes circRevSwipeNudge {
+  0%, 100% { transform: translateX(0); opacity: 0.55; }
+  50% { transform: translateX(6px); opacity: 1; }
+}
+@keyframes circRevSwipeFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .circ-rev-photo { transition: none; }
+  .circ-rev-word { animation: none; opacity: 1; filter: none; transform: none; }
+  .circ-rev-swipe-hint svg { animation: none; }
 }
 .stats {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -603,22 +871,44 @@ footer {
   .nav-price, .nav-link { display: none; }
   .hero {
     grid-template-columns: 1fr;
-    height: auto; min-height: auto; max-height: none; overflow: visible;
+    grid-template-rows: auto 1fr;
+    /* 100dvh sur les browsers récents (Safari iOS 15.4+, Chrome 108+) pour
+       prendre toute la fenêtre visible sans la barre URL. Fallback 100vh. */
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-height: none;
+    overflow: visible;
   }
   .hero-media {
-    height: 110vw;
-    /* Mask-image fade plus haut : image fully transparent dès 75% — laisse de la place noire au tag/title */
-    -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 75%);
-    mask-image: linear-gradient(to bottom, #000 45%, transparent 75%);
+    /* Image encore plus contenue pour laisser le contenu remonter. */
+    height: 72vw;
+    /* Mask plus bas — l'image reste pleine plus longtemps, fade démarre
+       à 65% et finit à 95%. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent 95%);
+    mask-image: linear-gradient(to bottom, #000 65%, transparent 95%);
   }
   .hero-media-overlay { display: none; }
   .hero-content {
-    padding: 0 24px 64px;
-    margin-top: -25vw;
+    /* Plus d'overlap : le contenu commence sous l'image avec un peu d'air. */
+    padding: 0 24px 28px;
+    margin-top: 4vw;
     justify-content: flex-start;
+    gap: 12px;
     position: relative;
     z-index: 2;
     width: 100%;
+  }
+  /* Body en mobile : plein largeur, taille bumpée mais line-height plus
+     serrée (1.6 au lieu de 2.4) pour densifier le bloc. */
+  .hero-body {
+    max-width: none;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding: 0;
   }
   .hero-index { display: none; }
   /* CTA mobile prend toute la largeur dispo en respectant le padding */
@@ -628,7 +918,12 @@ footer {
     justify-content: center;
     padding: 22px 24px;
   }
-  .hero-trust { justify-content: center; }
+  .hero-trust {
+    justify-content: center;
+    /* Collé au bouton — quasiment aucun espace, juste de quoi respirer. */
+    margin-top: 2px;
+    gap: 14px;
+  }
   .features, .gallery, .proof, .split, .cta-section { padding: 80px 24px; }
   .features { grid-template-columns: 1fr; gap: 56px; }
   /* Mobile : on cache les planches, on réaffiche la grille bento */
@@ -913,8 +1208,12 @@ footer {
 .addon {
   display: block;
   margin-bottom: 28px;
-  padding-top: 22px;
-  border-top: 0.5px solid rgba(240,237,232,0.12);
+  padding: 18px 20px;
+  border: 0.5px solid rgba(240, 237, 232, 0.12);
+  /* Carte sur fond légèrement contrasté pour séparer la modal du hero
+     (sinon elle se fond dans le bg ink quasi identique). */
+  background: rgba(28, 28, 26, 0.55);
+  border-radius: 4px;
   cursor: pointer;
   position: relative;
 }
@@ -1045,6 +1344,52 @@ footer {
   outline: 2px solid var(--cream);
   outline-offset: 3px;
 }
+
+/* Sélecteur quantité dans la modal flasques — minimaliste, posé sous la
+   row principale. Indépendant de la qty gilet, modifiable au clic. */
+.addon-qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 0.5px solid rgba(240, 237, 232, 0.08);
+}
+.addon-qty-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 0.5px solid rgba(240, 237, 232, 0.2);
+  border-radius: 2px;
+  color: var(--cream);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.addon-qty-btn:hover:not(:disabled) {
+  border-color: rgba(240, 237, 232, 0.45);
+  background: rgba(240, 237, 232, 0.06);
+}
+.addon-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.addon-qty-val {
+  min-width: 22px;
+  text-align: center;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cream);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+/* Sur hero light : carte ink, donc on garde le cream pour les contrôles. */
+.hero--light .addon-qty { border-top-color: rgba(240, 237, 232, 0.1); }
 
 @media (max-width: 600px) {
   .addon { padding-top: 20px; margin-bottom: 24px; }
@@ -1640,19 +1985,30 @@ footer {
 .cart-icon {
   position: relative;
   background: none; border: none; cursor: pointer;
-  color: var(--cream-dk); padding: 8px;
-  transition: color 0.2s;
+  /* Hérite de la couleur de la nav — ink en non-scrolled (hero light),
+     cream en scrolled (fond dark). */
+  color: inherit;
+  opacity: 0.85;
+  padding: 8px;
+  transition: opacity 0.2s, color 0.2s;
 }
-.cart-icon:hover { color: var(--cream); }
+.cart-icon:hover { opacity: 1; }
 .cart-badge {
   position: absolute; top: 0; right: 0;
-  background: var(--cream); color: var(--ink);
+  /* Inverse du fond nav : sur fond clair (non-scrolled) → badge ink ;
+     sur fond dark (scrolled) → badge cream. Hover-safe via la cascade. */
+  background: var(--ink); color: var(--cream);
   font-family: var(--font-geist), 'Geist', sans-serif;
   font-size: 9px; font-weight: 500;
   min-width: 16px; height: 16px;
   border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
   padding: 0 4px;
+  transition: background 0.4s, color 0.4s;
+}
+nav#nav.scrolled .cart-badge {
+  background: var(--cream);
+  color: var(--ink);
 }
 
 /* =============================================
@@ -3065,18 +3421,66 @@ footer {
   animation: fadeUp 0.8s 0.8s both;
   align-self: flex-start;
 }
-.hero-buy-sizes {
+.hero-buy-colors {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
-.hero-buy-label {
+.hero-buy-color-eyebrow {
+  font-family: var(--font-geist), system-ui, sans-serif;
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted-lt);
   flex-shrink: 0;
+}
+.hero-buy-color-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+.hero-buy-color-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 4px;
+  background: transparent;
+  border: 1px solid rgba(240, 237, 232, 0.35);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.hero-buy-color-dot:hover { border-color: rgba(240, 237, 232, 0.7); }
+.hero-buy-color-dot.is-active {
+  border-color: var(--cream);
+  transform: scale(1.06);
+}
+.hero-buy-color-dot:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+.hero-buy-color-swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px rgba(14, 14, 12, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.hero-buy-color-label {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--cream);
+}
+.hero-buy-sizes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 .hero-buy-pills {
   display: flex;
@@ -3119,6 +3523,11 @@ footer {
    partagées avec /produit, on contraint juste la largeur pour rester aligné
    avec le bouton CTA. */
 .hero-buy .addon { max-width: 460px; }
+
+/* Row réassurance + stock — visible uniquement en mobile (sur desktop, la
+   ligne hero-trust juste sous le CTA fait office de réassurance). */
+.hero-buy-trust-row { display: none; }
+.hero-buy-ship { display: inline-flex; align-items: center; gap: 8px; }
 
 /* =============================================
    STOCK COUNTER — pseudo-dynamique (item 6)
@@ -3282,8 +3691,47 @@ footer {
     align-self: stretch;
   }
   .hero-buy-sizes {
-    justify-content: center;
     flex-wrap: wrap;
+  }
+  /* Mobile : la row visible, avec "Livraison gratuite" à gauche et le
+     stock counter inline à droite. Pas de wrap : les deux textes ont été
+     raccourcis pour tenir sur une seule ligne même sur petits phones. */
+  .hero-buy-trust-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .hero-buy-ship {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-geist), system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    color: var(--cream-dk);
+  }
+  .hero-buy-ship-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--green, #2a7a5a);
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(42, 122, 90, 0.16);
+  }
+  /* Stock inline dans la row : pas de margin-top, taille alignée sur le
+     ship pour cohérence visuelle. */
+  .stock-counter--hero-inline {
+    margin: 0;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .stock-counter--hero-inline .stock-counter-dot {
+    width: 5px;
+    height: 5px;
   }
   /* Le stock counter du hero ferait doublon avec celui de la sticky bar dès
      qu'elle apparaît au scroll. On le garde car l'utilisateur peut acheter
@@ -3310,4 +3758,177 @@ footer {
   .compare-brand { font-size: 14px; }
   .compare-brand--other { font-size: 10px; letter-spacing: 0.1em; }
   .compare-check { width: 11px; height: 11px; }
+}
+
+/* =============================================
+   WELCOME POPUP — code promo -5% au 1er visiteur
+   Style éditorial dark : ink-soft, Cormorant italique, sans ornement.
+   ============================================= */
+.welcome-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  /* Au-dessus de tout : cookie banner (250), cart drawer (230), nav (200).
+     Le cookie banner reste visible derrière, intégré au fond flouté. */
+  z-index: 300;
+  background: rgba(14, 14, 12, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  /* Grid centre full-viewport — robuste sur mobile (vs flex + align-items
+     center qui peut tronquer le haut si la popup dépasse en hauteur). */
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  animation: welcomeFadeIn 0.35s ease both;
+}
+.welcome-popup {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  background: var(--ink-soft);
+  border: 0.5px solid rgba(240, 237, 232, 0.1);
+  border-radius: 2px;
+  padding: 56px 44px 40px;
+  color: var(--cream);
+  text-align: left;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 237, 232, 0.02);
+  animation: welcomeRise 0.5s var(--ease) both;
+}
+.welcome-popup-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  padding: 0;
+}
+.welcome-popup-close:hover { color: var(--cream); }
+.welcome-popup-close:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 2px;
+}
+.welcome-popup-eyebrow {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+.welcome-popup-title {
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(30px, 3.6vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--cream);
+  margin: 0 0 20px;
+}
+.welcome-popup-title em {
+  font-style: italic;
+  color: var(--muted-lt);
+}
+.welcome-popup-body {
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted-lt);
+  margin: 0 0 28px;
+}
+.welcome-popup-code-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 28px;
+  border: 0.5px solid rgba(240, 237, 232, 0.18);
+  border-radius: 2px;
+  background: transparent;
+}
+.welcome-popup-code {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 12px;
+  font-family: var(--font-cormorant), 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 19px;
+  letter-spacing: 0.18em;
+  color: var(--cream);
+  user-select: all;
+}
+.welcome-popup-copy {
+  flex-shrink: 0;
+  padding: 0 22px;
+  background: var(--cream);
+  color: var(--ink);
+  border: none;
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  min-width: 88px;
+}
+.welcome-popup-copy:hover { opacity: 0.85; }
+.welcome-popup-copy:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 3px;
+}
+.welcome-popup-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--cream);
+  font-family: var(--font-geist), system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s, opacity 0.2s;
+  /* Underline custom pour rester en cohérence avec les liens éditoriaux
+     du site (footer, mentions, etc.). */
+  border-bottom: 0.5px solid rgba(240, 237, 232, 0.45);
+  padding-bottom: 4px;
+}
+.welcome-popup-cta:hover {
+  border-bottom-color: var(--cream);
+}
+.welcome-popup-cta:focus-visible {
+  outline: 2px solid var(--cream);
+  outline-offset: 4px;
+}
+@keyframes welcomeFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes welcomeRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+  .welcome-popup { padding: 44px 26px 32px; }
+  .welcome-popup-code { font-size: 17px; letter-spacing: 0.14em; padding: 13px 8px; }
+  .welcome-popup-copy { min-width: 72px; padding: 0 14px; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-popup-backdrop,
+  .welcome-popup { animation: none; }
 }

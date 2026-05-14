@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "../lib/cart";
 import { api } from "../lib/api";
 import { parseProduct, type Product } from "../lib/schemas";
+import { findHeroColor, useHeroColor } from "../lib/heroColor";
 import { trackEvent } from "./Trackers";
 import { StockCounter } from "./StockCounter";
 
@@ -16,9 +17,6 @@ const SIZES: { label: string; soldout?: boolean }[] = [
   { label: "XXL", soldout: true },
 ];
 
-// Doit rester aligné avec COLOR_VARIANTS[0] dans app/produit/page.tsx.
-const DEFAULT_COLOR = "Gris perle";
-const DEFAULT_IMAGE = "/images/product-face.png";
 const FLASK_SLUG = "flasques-500ml";
 const FLASK_CART_IMAGE = "/images/flasks/pack-2-flasks.png";
 
@@ -34,6 +32,8 @@ export function LandingStickyBar() {
   const router = useRouter();
   const add = useCart((s) => s.add);
   const cartOpen = useCart((s) => s.isOpen);
+  const colorName = useHeroColor((s) => s.color);
+  const colorVariant = findHeroColor(colorName);
   const [product, setProduct] = useState<Product | null>(null);
   const [flaskProduct, setFlaskProduct] = useState<Product | null>(null);
   const [size, setSize] = useState<string>("M");
@@ -179,10 +179,10 @@ export function LandingStickyBar() {
       slug: product.slug,
       name: product.name,
       size,
-      color: DEFAULT_COLOR,
+      color: colorVariant.name,
       price: product.price,
       quantity: 1,
-      image: DEFAULT_IMAGE,
+      image: colorVariant.cartImage,
     });
 
     trackEvent("AddToCart", {
@@ -196,7 +196,7 @@ export function LandingStickyBar() {
         { id: product.id, quantity: 1, item_price: product.price },
       ]),
       size,
-      color: DEFAULT_COLOR,
+      color: colorVariant.name,
       source: "lp_sticky",
     });
 

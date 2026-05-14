@@ -64,6 +64,15 @@ export class MetaCapiService {
       return;
     }
 
+    // En dev/preview, on ne pousse pas les events vers Meta : évite de polluer
+    // les stats du Pixel prod avec les Purchase de test (et de fausser le CPA).
+    // Bypass possible via META_CAPI_TEST_EVENT_CODE — dans ce cas les events
+    // partent mais arrivent dans l'onglet "Test Events" du gestionnaire Meta.
+    if (process.env.NODE_ENV !== 'production' && !this.testEventCode) {
+      this.logger.debug(`Meta CAPI skip — NODE_ENV=${process.env.NODE_ENV ?? 'undefined'} (set META_CAPI_TEST_EVENT_CODE pour tester)`);
+      return;
+    }
+
     // Hash SHA-256 obligatoire pour les PII selon les specs Meta CAPI.
     const hash = (v?: string) => (v ? createHash('sha256').update(v.trim().toLowerCase()).digest('hex') : undefined);
     const hashPhone = (v?: string) => (v ? createHash('sha256').update(v.replace(/\D/g, '')).digest('hex') : undefined);

@@ -5,6 +5,7 @@ import { CartDrawer } from "./components/CartDrawer";
 import { CookieBanner } from "./components/CookieBanner";
 import { Trackers } from "./components/Trackers";
 import { ToastHost } from "./components/Toast";
+import { WelcomePopup } from "./components/WelcomePopup";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -86,6 +87,7 @@ export default function RootLayout({
         {children}
         <CartDrawer />
         <ToastHost />
+        <WelcomePopup />
         <CookieBanner />
         <Trackers />
       </body>
