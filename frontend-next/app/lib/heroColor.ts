@@ -72,6 +72,14 @@ export const useHeroColor = create<HeroColorState>()(
     {
       name: "tf_lp_color",
       partialize: (state) => ({ color: state.color }),
+      // Garde-fou : si localStorage contient une couleur obsolète (ancien
+      // nom "Bleu marine", migration, etc.), on reset sur le défaut au
+      // lieu de fallback silencieux côté findHeroColor.
+      onRehydrateStorage: () => (state) => {
+        if (state && !HERO_COLORS.some((c) => c.name === state.color)) {
+          state.color = HERO_COLORS[0].name;
+        }
+      },
     },
   ),
 );

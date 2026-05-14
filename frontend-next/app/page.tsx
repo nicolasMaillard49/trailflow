@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { CartIcon } from "./components/CartDrawer";
 import { SiteFooter } from "./components/SiteFooter";
@@ -113,7 +114,11 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className="hero hero--light">
-        <div className="hero-media">
+        <Link
+          href="/produit"
+          className="hero-media"
+          aria-label="Découvrir la fiche produit du gilet TrailFlow"
+        >
           <Image
             key={heroKey}
             src={heroSrc}
@@ -125,7 +130,7 @@ export default function HomePage() {
             style={{ objectFit: "cover", objectPosition: "top center" }}
           />
           <div className="hero-media-overlay" />
-        </div>
+        </Link>
         <div className="hero-content">
           <div className="hero-index">TrailFlow · SS 2026</div>
           <div className="hero-tag">Gilet hydratation · Trail &amp; Running</div>
